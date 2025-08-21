@@ -47,13 +47,13 @@ INSERT INTO PROFESSIONS(profession_name)
 VALUES ('PINTOR/A'),('CARPINTERO/A'),('CERRAJERO/A'),('RELOJERO/A'), ('JARDINERO/A'), ('ALBAÑIL'),('OBRERO/A');
 
 CREATE TABLE PROFESSIONALS(
-    professional_id SERIAL PRIMARY KEY,
+    professional_id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     profession_id INT NOT NULL,
     user_id uuid NOT NULL,
     description TEXT,
     verified BOOLEAN DEFAULT FALSE,
     specialization VARCHAR(100),
     UNIQUE (profession_id, user_id),
-    FOREIGN KEY (profession_id) REFERENCES PROFESSIONS(profession_id),
+    FOREIGN KEY (profession_id) REFERENCES professions(profession_id),
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );

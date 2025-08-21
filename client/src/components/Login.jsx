@@ -1,11 +1,43 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import toast, { Toaster } from "react-hot-toast";
 
-const Login = () => {
+const Login = ({ setAuth }) => {
+  const [inputs, setInputs] = useState({
+    email: "",
+    password: "",
+  });
+
+  const { email, password } = inputs;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch("http://localhost:4000/login", {
+        method: "POST",
+        body: JSON.stringify(inputs),
+        headers: { "Content-Type": "application/json" },
+      });
+      const parseRes = await response.json();
+      //console.log(parseRes);
+
+      if (parseRes.token) {
+        localStorage.setItem("token", parseRes.token);
+        setAuth(true);
+        toast.success("Sesión Iniciada");
+      } else {
+        setAuth(false);
+        toast.error(parseRes);
+      }
+    } catch (error) {
+      console.error(error.message);
+    }
+  };
   return (
     <div className="bg-gray-100 min-h-[60vh] flex items-center justify-center py-30">
+      <Toaster position="top-right" />
       <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
-        <form className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <h2 className="text-3xl font-extrabold text-[#1E3A8A] text-center mb-2">
             Bienvenido de vuelta
           </h2>
@@ -19,6 +51,9 @@ const Login = () => {
             <input
               type="email"
               className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#FE7743]"
+              name="email"
+              value={email}
+              onChange={(e) => setInputs({ ...inputs, email: e.target.value })}
             />
           </div>
           <div className="flex flex-col gap-2">
@@ -28,6 +63,11 @@ const Login = () => {
             <input
               type="password"
               className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#FE7743]"
+              name="password"
+              value={password}
+              onChange={(e) =>
+                setInputs({ ...inputs, password: e.target.value })
+              }
             />
           </div>
           <div className="flex items-center justify-between text-sm mt-2">

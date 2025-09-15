@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import Navbar from "./components/Navbar";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import Home from "./components/Home";
+import Services from "./components/Services";
+import MyServices from "./components/MyServices";
 import Footer from "./components/Footer";
 import Login from "./components/Login";
 import Register from "./components/Register";
@@ -67,6 +69,17 @@ const App = () => {
         <Navbar setAuth={setAuth} isAuthenticated={isAuthenticated} />
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route
+            path="/mis-servicios"
+            element={
+              isAuthenticated && tipoUsuario === "PROFESIONAL" ? (
+                <MyServices />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route path="/services" element={<Services />} />
           <Route
             path="/login"
             element={

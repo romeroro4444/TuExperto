@@ -4,6 +4,7 @@ import toast, { Toaster } from "react-hot-toast";
 import { assets } from "../assets/assets";
 
 const Navbar = ({ setAuth, isAuthenticated }) => {
+  const [tipoUsuario, setTipoUsuario] = useState(null);
   const [name, setName] = useState("");
   const [lastname, setLastname] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -37,9 +38,25 @@ const Navbar = ({ setAuth, isAuthenticated }) => {
   useEffect(() => {
     if (isAuthenticated && localStorage.getItem("token")) {
       getFullName();
+      // Obtener tipo de usuario
+      const fetchTipoUsuario = async () => {
+        try {
+          const token = localStorage.getItem("token");
+          const res = await fetch("http://localhost:4000/user-type", {
+            method: "GET",
+            headers: { token },
+          });
+          const data = await res.json();
+          setTipoUsuario(data.tipo_usuario);
+        } catch (err) {
+          setTipoUsuario(null);
+        }
+      };
+      fetchTipoUsuario();
     } else {
       setName("");
       setLastname("");
+      setTipoUsuario(null);
     }
   }, [isAuthenticated]);
   const isLoggedIn = !!localStorage.getItem("token");
@@ -49,12 +66,12 @@ const Navbar = ({ setAuth, isAuthenticated }) => {
       <Toaster position="top-right" />
       <div className="container mx-auto flex justify-between items-center py-4 px-4 md:px-20 lg:px-32 bg-transparent">
         <h1 className="text-3xl font-bold text-[#1E3A8A]">TuExperto</h1>
-        {/* Desktop menu */}
+
         <ul className="hidden md:flex gap-7 text-black text-sm">
           <Link to="/" className="hover:text-gray-400">
             Inicio
           </Link>
-          <Link to="/" className="hover:text-gray-400">
+          <Link to="/services" className="hover:text-gray-400">
             Servicios
           </Link>
           <Link to="/" className="hover:text-gray-400">
@@ -81,7 +98,7 @@ const Navbar = ({ setAuth, isAuthenticated }) => {
             />
           </svg>
         </button>
-        {/* Auth buttons */}
+
         {!isLoggedIn ? (
           <Link to="/login" className="hidden md:block">
             <button className="bg-[#FE7743] text-white px-8 py-2 rounded-full transition-colors duration-200 hover:bg-[#E56332] cursor-pointer">
@@ -114,6 +131,17 @@ const Navbar = ({ setAuth, isAuthenticated }) => {
                 >
                   Mi Perfil
                 </button>
+                {tipoUsuario === "PROFESIONAL" && (
+                  <button
+                    className="block w-full text-left px-4 py-2 text-[#1E3A8A] hover:bg-gray-100"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      navigate("/mis-servicios");
+                    }}
+                  >
+                    Mis Servicios
+                  </button>
+                )}
                 <button
                   onClick={logout}
                   className="block w-full text-left px-4 py-2 text-[#1E3A8A] hover:bg-gray-100"
@@ -125,7 +153,7 @@ const Navbar = ({ setAuth, isAuthenticated }) => {
           </div>
         )}
       </div>
-      {/* Mobile menu dropdown */}
+      {/* menu telefono */}
       {menuOpen && (
         <div className="md:hidden absolute top-16 left-0 w-full bg-white shadow-lg z-30">
           <ul className="flex flex-col gap-4 p-6 text-black text-base">
@@ -137,12 +165,21 @@ const Navbar = ({ setAuth, isAuthenticated }) => {
               Inicio
             </Link>
             <Link
-              to="/"
+              to="/services"
               className="hover:text-gray-400"
               onClick={() => setMenuOpen(false)}
             >
               Servicios
             </Link>
+            {isLoggedIn && tipoUsuario === "PROFESIONAL" && (
+              <Link
+                to="/mis-servicios"
+                className="hover:text-gray-400"
+                onClick={() => setMenuOpen(false)}
+              >
+                Mis Servicios
+              </Link>
+            )}
             <Link
               to="/"
               className="hover:text-gray-400"

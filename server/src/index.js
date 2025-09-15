@@ -15,6 +15,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(require("./routes/users.routes"));
 app.use(require("./routes/professionals.routes"));
 app.use(require("./routes/professions.routes"));
+app.use(require("./routes/services.routes"));
 
 app.listen(PORT);
 console.log("Server on port", PORT);

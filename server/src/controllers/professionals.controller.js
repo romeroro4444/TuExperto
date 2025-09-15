@@ -25,7 +25,7 @@ const getProfessionalById = async (req, res) => {
 const createProfessional = async (req, res) => {
   try {
     const { profession_id, user_id, description, specialization } = req.body;
-    // Verifica si el usuario ya tiene una profesión
+    // verifica si el usuario ya tiene una profesión
     const exists = await pool.query(
       "SELECT * FROM professionals WHERE user_id = $1",
       [user_id]
@@ -35,14 +35,13 @@ const createProfessional = async (req, res) => {
         message: "El usuario ya tiene una profesión asignada.",
       });
     }
-    // Crea el profesional
+    // crea el profesional
     const text =
       "INSERT INTO professionals(profession_id, user_id, description) VALUES ($1,$2,$3) RETURNING professional_id";
     const values = [profession_id, user_id, description];
     const response = await pool.query(text, values);
     const professional_id = response.rows[0].professional_id;
 
-    // procesa especializaciones (puede venir como string separado por comas)
     let specs = [];
     if (specialization) {
       if (Array.isArray(specialization)) {

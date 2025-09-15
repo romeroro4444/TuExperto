@@ -25,9 +25,12 @@ const Login = ({ setAuth }) => {
         localStorage.setItem("token", parseRes.token);
         setAuth(true);
         toast.success("Sesión Iniciada");
+        window.location.href = "/profile";
       } else {
         setAuth(false);
-        toast.error(parseRes);
+        toast.error(
+          typeof parseRes === "string" ? parseRes : "Error de autenticación"
+        );
       }
     } catch (error) {
       console.error(error.message);

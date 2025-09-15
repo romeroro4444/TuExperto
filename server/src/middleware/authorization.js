@@ -4,18 +4,21 @@ config();
 
 module.exports = async (req, res, next) => {
   try {
-    const jwtToken = req.header("token");
+    const token = req.header("token");
 
-    if (!jwtToken) {
-      return res.status(403).json("Not Authorize");
+    if (!token) {
+      return res
+        .status(401)
+        .json({ message: "No token, autorización denegada" });
     }
 
-    const payload = jwt.verify(jwtToken, process.env.jwtsecret);
+    const payload = jwt.verify(token, process.env.jwtSecret);
 
+    // Extrae solo el user_id del payload
     req.user = payload.user;
   } catch (error) {
     console.error(error.message);
-    return res.status(403).json("Not Authorize");
+    return res.status(401).json({ message: "Token inválido" });
   }
 
   next();

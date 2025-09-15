@@ -25,7 +25,7 @@ const getProfessionalById = async (req, res) => {
 const createProfessional = async (req, res) => {
   try {
     const { profession_id, user_id, description, specialization } = req.body;
-    // esto verifica si el usuario ya tiene una profesión
+    // Verifica si el usuario ya tiene una profesión
     const exists = await pool.query(
       "SELECT * FROM professionals WHERE user_id = $1",
       [user_id]
@@ -35,20 +35,58 @@ const createProfessional = async (req, res) => {
         message: "El usuario ya tiene una profesión asignada.",
       });
     }
-    // si no existe se crea el nuevo profesional
+    // Crea el profesional
     const text =
-      "INSERT INTO professionals(profession_id, user_id, description, specialization) VALUES ($1,$2,$3,$4)";
-    const values = [profession_id, user_id, description, specialization];
+      "INSERT INTO professionals(profession_id, user_id, description) VALUES ($1,$2,$3) RETURNING professional_id";
+    const values = [profession_id, user_id, description];
     const response = await pool.query(text, values);
-    console.log(response);
+    const professional_id = response.rows[0].professional_id;
+
+    // procesa especializaciones (puede venir como string separado por comas)
+    let specs = [];
+    if (specialization) {
+      if (Array.isArray(specialization)) {
+        specs = specialization;
+      } else {
+        specs = specialization
+          .split(",")
+          .map((s) => s.trim())
+          .filter((s) => s);
+      }
+    }
+
+    for (const specName of specs) {
+      // verifica si la especialización existe
+      let specRes = await pool.query(
+        "SELECT specialization_id FROM specializations WHERE LOWER(specialization_name) = LOWER($1)",
+        [specName]
+      );
+      let specialization_id;
+      if (specRes.rows.length === 0) {
+        // si no existe
+        const insertSpec = await pool.query(
+          "INSERT INTO specializations(specialization_name) VALUES ($1) RETURNING specialization_id",
+          [specName]
+        );
+        specialization_id = insertSpec.rows[0].specialization_id;
+      } else {
+        specialization_id = specRes.rows[0].specialization_id;
+      }
+      await pool.query(
+        "INSERT INTO professionals_specialization(professional_id, specialization_id) VALUES ($1, $2)",
+        [professional_id, specialization_id]
+      );
+    }
+
     res.json({
       message: "professional added succesfully",
       body: {
-        user: { profession_id, user_id, description, specialization },
+        user: { profession_id, user_id, description, specializations: specs },
       },
     });
   } catch (error) {
     console.log(error);
+    res.status(500).json({ message: "Error al crear profesional" });
   }
 };
 

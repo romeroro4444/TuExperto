@@ -21,6 +21,8 @@ const Register = ({ setAuth }) => {
     description: "",
     specialization: "",
   });
+  const [specializations, setSpecializations] = useState([]);
+  const [specializationInput, setSpecializationInput] = useState("");
   //cargar todas las profesiones
   const loadProfessions = async () => {
     const response = await fetch("http://localhost:4000/professions");
@@ -37,10 +39,10 @@ const Register = ({ setAuth }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // crea el usuario
+      const tipo_usuario = profession ? "PROFESIONAL" : "CLIENTE";
       const response = await fetch("http://localhost:4000/user", {
         method: "POST",
-        body: JSON.stringify(user),
+        body: JSON.stringify({ ...user, tipo_usuario }),
         headers: { "Content-Type": "application/json" },
       });
       const parseRes = await response.json();
@@ -49,11 +51,11 @@ const Register = ({ setAuth }) => {
         toast.success("Usuario Registrado");
         setAuth(true);
 
-        // Solo crear profesional si el usuario fue creado correctamente
         if (profession) {
           const professionalPayload = {
             user_id: parseRes.user_id,
             ...professionalData,
+            specialization: specializations.join(", "),
           };
           const profResponse = await fetch(
             "http://localhost:4000/professional",
@@ -76,6 +78,18 @@ const Register = ({ setAuth }) => {
     } catch (err) {
       toast.error("Error de conexión con el servidor");
     }
+  };
+
+  const handleAddSpecialization = () => {
+    const value = specializationInput.trim();
+    if (value && !specializations.includes(value)) {
+      setSpecializations([...specializations, value]);
+      setSpecializationInput("");
+    }
+  };
+
+  const handleRemoveSpecialization = (index) => {
+    setSpecializations(specializations.filter((_, i) => i !== index));
   };
 
   const handleChange = (e) => {
@@ -230,19 +244,44 @@ const Register = ({ setAuth }) => {
                       }
                       className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#FE7743]"
                     />
-                    <input
-                      type="text"
-                      placeholder="Especialización"
-                      name="specialization"
-                      value={professionalData.specialization}
-                      onChange={(e) =>
-                        setProfessionalData({
-                          ...professionalData,
-                          specialization: e.target.value,
-                        })
-                      }
-                      className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#FE7743]"
-                    />
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder="Especialización"
+                        value={specializationInput}
+                        onChange={(e) => setSpecializationInput(e.target.value)}
+                        className="border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#FE7743] w-2/3 text-sm"
+                        maxLength={30}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddSpecialization}
+                        className="bg-[#FE7743] text-white rounded-full px-3 py-1 text-sm font-bold hover:bg-[#E56332]"
+                        title="Agregar especialización"
+                      >
+                        +
+                      </button>
+                    </div>
+                    {specializations.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {specializations.map((spec, idx) => (
+                          <span
+                            key={idx}
+                            className="bg-[#1E3A8A] text-white px-2 py-1 rounded text-xs flex items-center"
+                          >
+                            {spec}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveSpecialization(idx)}
+                              className="ml-2 text-[#FE7743] font-bold text-xs hover:text-[#E56332]"
+                              title="Eliminar"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </>
               )}

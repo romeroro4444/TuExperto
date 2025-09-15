@@ -5,6 +5,8 @@ import Home from "./components/Home";
 import Footer from "./components/Footer";
 import Login from "./components/Login";
 import Register from "./components/Register";
+import Profile from "./components/Profile";
+import EditProfile from "./components/EditProfile";
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -14,16 +16,20 @@ const App = () => {
   };
 
   const isAuth = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setIsAuthenticated(false);
+      return;
+    }
     try {
       const response = await fetch("http://localhost:4000/verify", {
         method: "GET",
-        headers: { token: localStorage.token },
+        headers: { token },
       });
-
       const parseRes = await response.json();
-
-      parseRes === true ? setIsAuthenticated(true) : setIsAuthenticated(false);
+      setIsAuthenticated(parseRes === true);
     } catch (error) {
+      setIsAuthenticated(false);
       console.error(error.message);
     }
   };
@@ -31,6 +37,29 @@ const App = () => {
   useEffect(() => {
     isAuth();
   }, []);
+
+  const [tipoUsuario, setTipoUsuario] = useState(null);
+
+  useEffect(() => {
+    const fetchTipoUsuario = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setTipoUsuario(null);
+        return;
+      }
+      try {
+        const res = await fetch("http://localhost:4000/user-type", {
+          method: "GET",
+          headers: { token },
+        });
+        const data = await res.json();
+        setTipoUsuario(data.tipo_usuario);
+      } catch (err) {
+        setTipoUsuario(null);
+      }
+    };
+    if (isAuthenticated) fetchTipoUsuario();
+  }, [isAuthenticated]);
 
   return (
     <div className="w-full overflow-hidden">
@@ -58,7 +87,20 @@ const App = () => {
               )
             }
           />
-          {/* Otras rutas protegidas */}
+          <Route
+            path="/profile"
+            element={
+              !isAuthenticated ? (
+                <Navigate to="/" replace />
+              ) : (
+                <Profile setAuth={setAuth} tipo_usuario={tipoUsuario} />
+              )
+            }
+          />
+          <Route
+            path="/edit-profile"
+            element={<EditProfile tipo_usuario={tipoUsuario} />}
+          />
         </Routes>
         <Footer />
       </BrowserRouter>

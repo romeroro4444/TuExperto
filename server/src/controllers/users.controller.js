@@ -26,7 +26,8 @@ const getUserById = async (req, res) => {
 
 const createUser = async (req, res) => {
   try {
-    const { rut, name, lastname, email, password, telefono } = req.body;
+    const { rut, name, lastname, email, password, telefono, tipo_usuario } =
+      req.body;
 
     const user = await pool.query(
       "SELECT * FROM users WHERE email = $1 OR rut = $2",
@@ -48,17 +49,33 @@ const createUser = async (req, res) => {
       "INSERT INTO users(rut, name, lastname, email, password, telefono) VALUES ($1,$2,$3,$4,$5,$6) RETURNING user_id";
     const values = [rut, name, lastname, email, bcryptPasword, telefono];
     const response = await pool.query(text, values);
-    console.log(response);
+    const user_id = response.rows[0].user_id;
+
+    // Obtener el id_tipo_usuario según el nombre recibido
+    const tipoRes = await pool.query(
+      "SELECT user_type_id FROM USER_TYPES WHERE type_name = $1",
+      [tipo_usuario]
+    );
+    if (tipoRes.rows.length === 0) {
+      return res.status(400).json("Tipo de usuario no válido");
+    }
+    const id_tipo_usuario = tipoRes.rows[0].user_type_id;
+
+    // Insertar en Usuarios_TiposUsuarios
+    await pool.query(
+      "INSERT INTO USERS_USERTYPE (user_type_id, user_id) VALUES ($1, $2)",
+      [id_tipo_usuario, user_id]
+    );
 
     // generate our jwt token
-    const token = jwtGenerator(response.rows[0].user_id);
+    const token = jwtGenerator(user_id);
 
     res.json({
       message: "user added succesfully",
-      user_id: response.rows[0].user_id,
+      user_id,
       token,
       body: {
-        user: { rut, name, lastname, email, password, telefono },
+        user: { rut, name, lastname, email, password, telefono, tipo_usuario },
       },
     });
   } catch (error) {

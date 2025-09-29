@@ -132,6 +132,61 @@ const editServiceById = async (req, res) => {
   });
 };
 
+const changeToDeactivate = async (req, res) => {
+  try {
+    const service_id = req.params.service_id;
+    const text = "UPDATE services SET active = false WHERE service_id = $1";
+    const response = await pool.query(text, [service_id]);
+    if (response.rowCount === 0) {
+      return res.status(404).json({ message: "no se enceuntra ese servicio" });
+    }
+    res.json({ message: "Servicio desactivado" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al desactivar el servicio" });
+  }
+};
+const changeToActivate = async (req, res) => {
+  try {
+    const service_id = req.params.service_id;
+    const text = "UPDATE services SET active = true WHERE service_id = $1";
+    const response = await pool.query(text, [service_id]);
+    if (response.rowCount === 0) {
+      return res.status(404).json({ message: "no se enceuntra ese servicio" });
+    }
+    res.json({ message: "Servicio activado" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al desactivar el servicio" });
+  }
+};
+
+const editServiceByToken = async (req, res) => {
+  const service_id = req.user;
+  if (!service_id) {
+    return res
+      .status(401)
+      .json({ message: "Token inválido o service_id no encontrado" });
+  }
+  const { title, description, price, modality, duration } = req.body;
+  try {
+    await pool.query(
+      `UPDATE services SET
+        title = COALESCE($1, title),
+        description = COALESCE($2, description),
+        price = COALESCE($3, price),
+        modality = COALESCE($4, modality),
+        duration = COALESCE($5, duration)
+      WHERE service_id = $6`,
+      [title, description, price, modality, duration, service_id]
+    );
+    res.json({ message: "Servicio actualizado correctamente" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error al editar el servicio" });
+  }
+};
+
 module.exports = {
   getServices,
   getServiceById,
@@ -139,4 +194,7 @@ module.exports = {
   deleteServiceById,
   editServiceById,
   getMyServices,
+  changeToActivate,
+  changeToDeactivate,
+  editServiceByToken,
 };

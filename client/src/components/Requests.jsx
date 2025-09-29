@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
-import ServiceCard from "./ServiceCard";
+import RequestCard from "./RequestCard";
 
 const Servicios = () => {
-  const [services, setServices] = useState([]);
+  const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const servicesPerPage = 5;
+  const requestsPerPage = 5;
   const [search, setSearch] = useState("");
   const [profession, setProfession] = useState("");
   const [specialization, setSpecialization] = useState("");
@@ -13,37 +13,37 @@ const Servicios = () => {
   const [maxPrice, setMaxPrice] = useState(100000);
 
   useEffect(() => {
-    const fetchServices = async () => {
+    const fetchRequests = async () => {
       try {
-        const res = await fetch("http://localhost:4000/services");
+        const res = await fetch("http://localhost:4000/requests");
         const data = await res.json();
-        setServices(data);
+        setRequests(data);
       } catch (err) {
-        setServices([]);
+        setRequests([]);
       } finally {
         setLoading(false);
       }
     };
-    fetchServices();
+    fetchRequests();
   }, []);
 
-  const indexOfLastService = currentPage * servicesPerPage;
-  const indexOfFirstService = indexOfLastService - servicesPerPage;
+  const indexOfLastRequests = currentPage * requestsPerPage;
+  const indexOfFirstRequests = indexOfLastRequests - requestsPerPage;
   // Filtrar servicios en frontend
-  const filteredServices = services.filter((service) => {
-    if (!service.active) return false; // Solo servicios activos
+  const filteredrequests = requests.filter((request) => {
     const matchesSearch =
-      service.title.toLowerCase().includes(search.toLowerCase()) ||
-      service.description.toLowerCase().includes(search.toLowerCase());
+      request.title.toLowerCase().includes(search.toLowerCase()) ||
+      request.description.toLowerCase().includes(search.toLowerCase());
     const matchesProfession = profession
-      ? service.profession_name === profession
+      ? request.profession_name === profession
       : true;
     const matchesSpecialization = specialization
-      ? service.specialization_name
-        ? service.specialization_name === specialization
+      ? request.specialization_name
+        ? request.specialization_name === specialization
         : false
       : true;
-    const matchesPrice = service.price >= minPrice && service.price <= maxPrice;
+    const matchesPrice =
+      request.budget >= minPrice && request.budget <= maxPrice;
     return (
       matchesSearch &&
       matchesProfession &&
@@ -51,16 +51,16 @@ const Servicios = () => {
       matchesPrice
     );
   });
-  const currentServices = filteredServices.slice(
-    indexOfFirstService,
-    indexOfLastService
+  const currentrequests = filteredrequests.slice(
+    indexOfFirstRequests,
+    indexOfLastRequests
   );
-  const totalPages = Math.ceil(filteredServices.length / servicesPerPage);
+  const totalPages = Math.ceil(filteredrequests.length / requestsPerPage);
 
   return (
     <div className="bg-gray-100 min-h-screen py-10 px-2 md:px-20 lg:px-32">
       <h2 className="text-3xl font-bold text-[#1E3A8A] mb-8">
-        Buscar Servicios
+        Buscar Solicitudes de Servicio
       </h2>
       <div className="flex flex-col md:flex-row gap-8">
         {/* Filtros */}
@@ -68,7 +68,7 @@ const Servicios = () => {
           <h3 className="text-lg font-semibold text-[#1E3A8A] mb-4">Filtros</h3>
           <input
             type="text"
-            placeholder="Buscar servicios"
+            placeholder="Buscar solicitud"
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -91,35 +91,11 @@ const Servicios = () => {
               <option value="">Selecciona Profesión</option>
               {[
                 ...new Set(
-                  services.map((s) => s.profession_name).filter(Boolean)
+                  requests.map((s) => s.profession_name).filter(Boolean)
                 ),
               ].map((prof, idx) => (
                 <option key={idx} value={prof}>
                   {prof}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-semibold mb-1 text-[#1E3A8A]">
-              Especialización
-            </label>
-            <select
-              className="w-full border border-gray-300 rounded-lg px-3 py-2"
-              value={specialization}
-              onChange={(e) => {
-                setSpecialization(e.target.value);
-                setCurrentPage(1);
-              }}
-            >
-              <option value="">Selecciona Especialización</option>
-              {[
-                ...new Set(
-                  services.map((s) => s.specialization_name).filter(Boolean)
-                ),
-              ].map((spec, idx) => (
-                <option key={idx} value={spec}>
-                  {spec}
                 </option>
               ))}
             </select>
@@ -151,28 +127,22 @@ const Servicios = () => {
               className="w-full mt-2"
             />
           </div>
-          <div>
-            <label className="block text-sm font-semibold mb-1 text-[#1E3A8A]">
-              Calificación mínima
-            </label>
-            <input type="range" min="1" max="5" className="w-full" />
-          </div>
         </aside>
 
         <section className="md:w-3/4">
           {loading ? (
             <div className="text-center text-[#1E3A8A]">
-              Cargando servicios...
+              Cargando solicitudes...
             </div>
           ) : (
             <div className="grid gap-6">
-              {currentServices.length === 0 ? (
+              {currentrequests.length === 0 ? (
                 <div className="text-center text-gray-500">
                   No hay servicios disponibles.
                 </div>
               ) : (
-                currentServices.map((service) => (
-                  <ServiceCard key={service.service_id} service={service} />
+                currentrequests.map((request) => (
+                  <RequestCard key={request.request_id} request={request} />
                 ))
               )}
             </div>

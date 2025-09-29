@@ -3,12 +3,16 @@ import Navbar from "./components/Navbar";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import Home from "./components/Home";
 import Services from "./components/Services";
+import Requests from "./components/Requests";
 import MyServices from "./components/MyServices";
 import Footer from "./components/Footer";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import Profile from "./components/Profile";
 import EditProfile from "./components/EditProfile";
+import EditService from "./components/EditService";
+import MyRequests from "./components/MyRequests";
+import EditRequest from "./components/EditRequest";
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -79,7 +83,28 @@ const App = () => {
               )
             }
           />
+          <Route
+            path="/mis-solicitudes"
+            element={
+              isAuthenticated && tipoUsuario === "CLIENTE" ? (
+                <MyRequests />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="/edit-request/:request_id"
+            element={
+              isAuthenticated && tipoUsuario === "CLIENTE" ? (
+                <EditRequest />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
           <Route path="/services" element={<Services />} />
+          <Route path="/requests" element={<Requests />} />
           <Route
             path="/login"
             element={
@@ -113,6 +138,16 @@ const App = () => {
           <Route
             path="/edit-profile"
             element={<EditProfile tipo_usuario={tipoUsuario} />}
+          />
+          <Route
+            path="/edit-service/:service_id"
+            element={
+              isAuthenticated && tipoUsuario === "PROFESIONAL" ? (
+                <EditService />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
           />
         </Routes>
         <Footer />

@@ -7,13 +7,23 @@ const {
   createService,
   deleteServiceById,
   editServiceById,
+  changeToDeactivate,
+  changeToActivate,
+  editServiceByToken,
 } = require("../controllers/services.controller");
+
+const authorization = require("./../middleware/authorization");
 
 router.get("/services", getServices);
 router.get("/service/:service_id", getServiceById);
-const authorization = require("./../middleware/authorization");
 router.post("/service", authorization, createService);
 router.delete("/service/:service_id", deleteServiceById);
 router.put("/service/:service_id", editServiceById);
+//activar y desactivar servicio
+router.put("/service/:service_id/deactivate", changeToDeactivate);
+router.put("/service/:service_id/activate", changeToActivate);
+
+//editar servicio
+router.put("/editing-service", authorization, editServiceByToken);
 
 module.exports = router;

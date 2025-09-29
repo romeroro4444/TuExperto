@@ -1,7 +1,9 @@
 import React from "react";
 import { assets } from "../assets/assets";
+import { useNavigate } from "react-router-dom";
 
 const Header = () => {
+  const navigate = useNavigate();
   return (
     <div className="bg-[#eef2ff] px-10">
       <div className="flex flex-col md:flex-row items-center gap-10 md:gap-16 py-10">
@@ -13,7 +15,12 @@ const Header = () => {
             La forma más fácil de contratar expertos de confianza para cualquier
             servicio que necesites
           </p>
-          <button className="bg-[#FE7743] text-white px-8 py-3 rounded-full mt-6 text-lg font-semibold">
+          <button
+            className="bg-[#FE7743] text-white px-8 py-3 rounded-full mt-6 text-lg font-semibold cursor-pointer"
+            onClick={() => {
+              navigate("/services");
+            }}
+          >
             Encuentra servicios
           </button>
         </div>

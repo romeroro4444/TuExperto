@@ -5,6 +5,7 @@ const MyServices = () => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [state, setState] = useState([]);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -24,8 +25,10 @@ const MyServices = () => {
         });
         const data = await res.json();
         setServices(data);
+        setState(data.map((s) => !!s.active));
       } catch (err) {
         setServices([]);
+        setState([]);
       } finally {
         setLoading(false);
       }
@@ -60,6 +63,58 @@ const MyServices = () => {
         setServices((prev) => [...prev, newService]);
       }
     } catch (err) {}
+  };
+
+  const handleDeactivate = async (service_id) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        `http://localhost:4000/service/${service_id}/deactivate`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", token },
+        }
+      );
+      if (res.ok) {
+        setServices((prev) =>
+          prev.map((s) =>
+            s.service_id === service_id ? { ...s, active: false } : s
+          )
+        );
+        setState((prev) =>
+          prev.map((v, i) =>
+            services[i].service_id === service_id ? false : v
+          )
+        );
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleActivate = async (service_id) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        `http://localhost:4000/service/${service_id}/activate`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", token },
+        }
+      );
+      if (res.ok) {
+        setServices((prev) =>
+          prev.map((s) =>
+            s.service_id === service_id ? { ...s, active: true } : s
+          )
+        );
+        setState((prev) =>
+          prev.map((v, i) => (services[i].service_id === service_id ? true : v))
+        );
+      }
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
@@ -195,12 +250,31 @@ const MyServices = () => {
                     ${service.price}
                   </td>
                   <td className="py-2 px-2">
-                    <button className="text-[#1E3A8A] font-medium hover:underline mr-4">
+                    <button
+                      className="text-[#1E3A8A] font-medium hover:underline mr-4"
+                      onClick={() =>
+                        navigate(`/edit-service/${service.service_id}`)
+                      }
+                    >
                       Editar
                     </button>
-                    <button className="text-gray-500 font-medium hover:underline">
-                      Desactivar
-                    </button>
+                    {service.active ? (
+                      <button
+                        className="text-red-500 font-medium hover:underline cursor-pointer"
+                        onClick={() => handleDeactivate(service.service_id)}
+                        disabled={!service.active}
+                      >
+                        Desactivar
+                      </button>
+                    ) : (
+                      <button
+                        className="text-green-600 font-medium hover:underline cursor-pointer"
+                        onClick={() => handleActivate(service.service_id)}
+                        disabled={service.active}
+                      >
+                        Activar
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

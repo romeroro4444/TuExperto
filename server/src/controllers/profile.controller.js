@@ -1,3 +1,5 @@
+const pool = require("../db");
+
 // edita el perfil del cliente con token
 const editClientProfileByToken = async (req, res) => {
   const user_id = req.user;
@@ -71,7 +73,7 @@ const getClientProfileByToken = async (req, res) => {
     res.status(500).json({ message: "Error al obtener perfil de cliente" });
   }
 };
-// edita el perfil usando el token
+// edita el perfil del experto usando el token
 const editProfileByToken = async (req, res) => {
   const user_id = req.user;
   if (!user_id) {
@@ -113,9 +115,8 @@ const editProfileByToken = async (req, res) => {
     res.status(500).json({ message: "Error al editar perfil" });
   }
 };
-const pool = require("../db");
 
-// obtiene todos los datos del perfil profesional por user_id
+/* // obtiene todos los datos del perfil profesional por user_id
 const getProfileByUserId = async (req, res) => {
   const user_id = req.params.user_id;
   if (!user_id || user_id === "null" || user_id === "undefined") {
@@ -164,7 +165,7 @@ const getProfileByUserId = async (req, res) => {
     console.log(error);
     res.status(500).json({ message: "Error al obtener perfil" });
   }
-};
+}; */
 
 // obtiene perfil usando el user_id extraído del token
 const getProfileByToken = async (req, res) => {
@@ -220,7 +221,6 @@ const getProfileByToken = async (req, res) => {
 };
 
 module.exports = {
-  getProfileByUserId,
   getProfileByToken,
   editProfileByToken,
   getClientProfileByToken,

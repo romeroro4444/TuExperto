@@ -74,6 +74,9 @@ const Navbar = ({ setAuth, isAuthenticated }) => {
           <Link to="/services" className="hover:text-gray-400">
             Servicios
           </Link>
+          <Link to="/requests" className="hover:text-gray-400">
+            Solicitudes
+          </Link>
           <Link to="/" className="hover:text-gray-400">
             Acerca de
           </Link>
@@ -142,6 +145,17 @@ const Navbar = ({ setAuth, isAuthenticated }) => {
                     Mis Servicios
                   </button>
                 )}
+                {tipoUsuario === "CLIENTE" && (
+                  <button
+                    className="block w-full text-left px-4 py-2 text-[#1E3A8A] hover:bg-gray-100"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      navigate("/mis-solicitudes");
+                    }}
+                  >
+                    Mis Solicitudes
+                  </button>
+                )}
                 <button
                   onClick={logout}
                   className="block w-full text-left px-4 py-2 text-[#1E3A8A] hover:bg-gray-100"
@@ -171,6 +185,13 @@ const Navbar = ({ setAuth, isAuthenticated }) => {
             >
               Servicios
             </Link>
+            <Link
+              to="/requests"
+              className="hover:text-gray-400"
+              onClick={() => setMenuOpen(false)}
+            >
+              Solicitudes
+            </Link>
             {isLoggedIn && tipoUsuario === "PROFESIONAL" && (
               <Link
                 to="/mis-servicios"
@@ -178,6 +199,15 @@ const Navbar = ({ setAuth, isAuthenticated }) => {
                 onClick={() => setMenuOpen(false)}
               >
                 Mis Servicios
+              </Link>
+            )}
+            {isLoggedIn && tipoUsuario === "CLIENTE" && (
+              <Link
+                to="/mis-solicitudes"
+                className="hover:text-gray-400"
+                onClick={() => setMenuOpen(false)}
+              >
+                Mis Solicitudes
               </Link>
             )}
             <Link

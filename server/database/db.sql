@@ -104,3 +104,15 @@ CREATE TABLE SERVICES(
     publication_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (professional_id) REFERENCES PROFESSIONALS(professional_id) ON DELETE CASCADE
 );
+
+CREATE TABLE SERVICES_REQUESTS(
+    request_id SERIAL PRIMARY KEY,
+    user_id uuid NOT NULL,
+    profession_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    budget INT NOT NULL,
+    publication_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (profession_id) REFERENCES professions(profession_id)
+);

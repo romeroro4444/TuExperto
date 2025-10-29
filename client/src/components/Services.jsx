@@ -10,7 +10,7 @@ const Servicios = () => {
   const [profession, setProfession] = useState("");
   const [specialization, setSpecialization] = useState("");
   const [minPrice, setMinPrice] = useState(0);
-  const [maxPrice, setMaxPrice] = useState(100000);
+  const [maxPrice, setMaxPrice] = useState(1000000);
 
   useEffect(() => {
     const fetchServices = async () => {

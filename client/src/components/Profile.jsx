@@ -5,6 +5,7 @@ const Profile = ({ tipo_usuario }) => {
   const navigate = useNavigate();
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [professionalReviews, setProfessionalReviews] = useState([]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -48,6 +49,30 @@ const Profile = ({ tipo_usuario }) => {
     };
     fetchProfile();
   }, [tipo_usuario]);
+
+  useEffect(() => {
+    const fetchProfessionalReviews = async () => {
+      if (tipo_usuario !== "PROFESIONAL") return;
+      const token = localStorage.getItem("token");
+      try {
+        const res = await fetch("http://localhost:4000/reviews", {
+          method: "GET",
+          headers: { token },
+        });
+        const data = await res.json();
+        // Filtrar reseñas por citas que correspondan al profesional
+        if (profileData && profileData.name) {
+          // Aquí deberías filtrar por el profesional actual, pero depende de cómo esté la relación en la DB
+          setProfessionalReviews(data);
+        } else {
+          setProfessionalReviews([]);
+        }
+      } catch (err) {
+        setProfessionalReviews([]);
+      }
+    };
+    fetchProfessionalReviews();
+  }, [tipo_usuario, profileData]);
 
   if (loading)
     return <div className="text-center mt-8">Cargando perfil...</div>;
@@ -157,7 +182,30 @@ const Profile = ({ tipo_usuario }) => {
 
       <section>
         <h3 className="text-lg font-semibold mb-2">Reseñas</h3>
-        <p className="text-gray-700 leading-relaxed">{profileData.reviews}</p>
+        {professionalReviews.length === 0 ? (
+          <p className="text-gray-700 leading-relaxed">
+            Aún no tienes reseñas.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {professionalReviews.map((review) => (
+              <div
+                key={review.review_id}
+                className="bg-gray-50 p-4 rounded shadow"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-yellow-400 text-xl">
+                    {"★".repeat(review.rating)}
+                  </span>
+                  <span className="text-gray-500 text-sm">
+                    {review.rating}/5
+                  </span>
+                </div>
+                <div className="text-gray-700 mb-1">{review.comment}</div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

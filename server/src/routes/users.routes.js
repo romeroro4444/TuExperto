@@ -10,6 +10,7 @@ const {
   login,
   verify,
   getFullName,
+  getAudit,
 } = require("../controllers/users.controller");
 
 const {
@@ -39,5 +40,8 @@ router.get("/profile-client", authorization, getClientProfileByToken);
 router.put("/profile-client", authorization, editClientProfileByToken);
 router.put("/profile", authorization, editProfileByToken);
 router.get("/user-type", authorization, getUserTypeByToken);
+
+//auditorio
+router.get("/audit", getAudit);
 
 module.exports = router;

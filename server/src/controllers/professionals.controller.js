@@ -42,6 +42,18 @@ const createProfessional = async (req, res) => {
     const response = await pool.query(text, values);
     const professional_id = response.rows[0].professional_id;
 
+    await pool.query(
+      `INSERT INTO audit(user_id, affected_table, affected_record_id, action, description) 
+      VALUES ($1,$2,$3,$4,$5)`,
+      [
+        user_id,
+        "PROFESSIONALS",
+        professional_id,
+        "POST",
+        `Se registro un nuevo profesional al sistema`,
+      ]
+    );
+
     let specs = [];
     if (specialization) {
       if (Array.isArray(specialization)) {

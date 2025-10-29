@@ -14,31 +14,6 @@ const MyRequests = () => {
   const [professionsList, setProfessionsList] = useState([]);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchMyRequests = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:4000/my-requests", {
-          method: "GET",
-          headers: { token },
-        });
-        const data = await res.json();
-        setRequests(data);
-      } catch (err) {
-        setRequests([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    const fetchProfessions = async () => {
-      const res = await fetch("http://localhost:4000/professions");
-      const data = await res.json();
-      setProfessionsList(data);
-    };
-    fetchMyRequests();
-    fetchProfessions();
-  }, []);
-
   const handleChange = (e) => {
     const { name, value, type, selectedOptions } = e.target;
     if (type === "select-multiple") {
@@ -98,6 +73,30 @@ const MyRequests = () => {
     }
   };
 
+  useEffect(() => {
+    const fetchMyRequests = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("http://localhost:4000/my-requests", {
+          method: "GET",
+          headers: { token },
+        });
+        const data = await res.json();
+        setRequests(data);
+      } catch (err) {
+        setRequests([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    const fetchProfessions = async () => {
+      const res = await fetch("http://localhost:4000/professions");
+      const data = await res.json();
+      setProfessionsList(data);
+    };
+    fetchMyRequests();
+    fetchProfessions();
+  }, []);
   return (
     <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-lg p-4 sm:p-8 lg:p-12 mt-10">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
@@ -202,7 +201,7 @@ const MyRequests = () => {
                     <div className="font-semibold text-[#1E3A8A]">
                       {request.title}
                     </div>
-                    <div className="text-sm text-gray-700">
+                    <div className="text-sm text-gray-700 break-words max-w-xs whitespace-pre-line">
                       {request.description}
                     </div>
                   </td>

@@ -61,10 +61,16 @@ const createUser = async (req, res) => {
     }
     const id_tipo_usuario = tipoRes.rows[0].user_type_id;
 
-    // Insertar en Usuarios_TiposUsuarios
+    // insertar en Usuarios_TiposUsuarios
     await pool.query(
       "INSERT INTO USERS_USERTYPE (user_type_id, user_id) VALUES ($1, $2)",
       [id_tipo_usuario, user_id]
+    );
+
+    await pool.query(
+      `INSERT INTO audit(user_id, affected_table, affected_record_id, action, description) 
+      VALUES ($1,$2,$3,$4,$5)`,
+      [user_id, "USERS", user_id, "POST", "Nuevo usuario registrado"]
     );
 
     // generate our jwt token
@@ -92,8 +98,14 @@ const deleteUserById = async (req, res) => {
       user_id,
     ]);
     const text = "DELETE FROM users WHERE user_id = $1";
+    await pool.query(
+      `INSERT INTO audit(user_id, affected_table, affected_record_id, action, description) 
+      VALUES ($1,$2,$3,$4,$5)`,
+      [user_id, "USERS", user_id, "DELETE", "Usuario eliminado"]
+    );
     const response = await pool.query(text, [user_id]);
     console.log(response);
+
     res.json({
       message: `User with user_id ${user_id} deleted`,
     });
@@ -110,6 +122,11 @@ const editUser = async (req, res) => {
       "UPDATE users SET name = $1, lastname = $2, email = $3, password = $4, telefono = $5 WHERE user_id = $6";
     const values = [name, lastname, email, password, telefono, user_id];
     const response = await pool.query(text, values);
+    await pool.query(
+      `INSERT INTO audit(user_id, affected_table, affected_record_id, action, description) 
+      VALUES ($1,$2,$3,$4,$5)`,
+      [user_id, "USERS", user_id, "PUT", "Usuario editado"]
+    );
     console.log(response);
     res.json({
       message: "user edited succesfully",
@@ -174,6 +191,15 @@ const getFullName = async (req, res) => {
   }
 };
 
+const getAudit = async (req, res) => {
+  try {
+    const response = await pool.query("SELECT * FROM audit");
+    res.json(response.rows);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 module.exports = {
   getUsers,
   getUserById,
@@ -183,4 +209,5 @@ module.exports = {
   login,
   verify,
   getFullName,
+  getAudit,
 };

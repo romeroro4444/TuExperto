@@ -40,11 +40,26 @@ const createProfession = async (req, res) => {
         message: "La profesión ya existe.",
       });
     }
+    // Insertar la profesión y obtener el profession_id
     const response = await pool.query(
-      "INSERT INTO professions(profession_name) VALUES ($1)",
+      "INSERT INTO professions(profession_name) VALUES ($1) RETURNING profession_id",
       [profession_name]
     );
-    console.log(response);
+    const profession_id = response.rows[0].profession_id;
+
+    const user_id = req.user;
+
+    /*     await pool.query(
+      `INSERT INTO audit(user_id, affected_table, affected_record_id, action, description) 
+      VALUES ($1,$2,$3,$4,$5)`,
+      [
+        user_id,
+        "PROFESSIONS",
+        profession_id,
+        "POST",
+        `Profesión '${profession_name}' creada`,
+      ]
+    ); */
     res.json({
       message: "profession added succesfully",
       body: {

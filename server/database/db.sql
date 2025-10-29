@@ -116,3 +116,60 @@ CREATE TABLE SERVICES_REQUESTS(
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
     FOREIGN KEY (profession_id) REFERENCES professions(profession_id)
 );
+
+CREATE TABLE APPOINTMENTS(
+    appointment_id SERIAL PRIMARY KEY,
+    service_id INT NOT NULL,
+    user_id uuid NOT NULL,
+    reservation_date TIMESTAMP NOT NULL,
+    status VARCHAR(255) NOT NULL,
+    FOREIGN KEY (service_id) REFERENCES SERVICES(service_id),
+    FOREIGN KEY (user_id) REFERENCES USERS(user_id)
+);
+
+ALTER TABLE appointments
+ALTER COLUMN status SET DEFAULT 'PENDIENTE';
+
+ALTER TABLE appointments DROP CONSTRAINT IF EXISTS appointments_service_id_fkey;
+ALTER TABLE appointments
+ADD CONSTRAINT appointments_service_id_fkey
+FOREIGN KEY (service_id) REFERENCES services(service_id) ON DELETE CASCADE;
+
+CREATE TABLE NOTIFICATIONS(
+    notification_id SERIAL PRIMARY KEY,
+    appointment_id INT NOT NULL,
+    notification_type VARCHAR(50) NOT NULL,
+    recipient_email VARCHAR(255) NOT NULL,
+    subject VARCHAR(255) NOT NULL,
+    mesagge TEXT,
+    date_sent TIMESTAMP NOT NULL,
+    sent_status VARCHAR(50) NOT NULL,
+    FOREIGN KEY (appointment_id) REFERENCES APPOINTMENTS(appointment_id)
+);
+
+CREATE TABLE AUDIT(
+    audit_id SERIAL PRIMARY KEY,
+    user_id uuid NOT NULL,
+    affected_table VARCHAR(50) NOT NULL,
+    affected_record_id VARCHAR(255) NOT NULL,
+    action VARCHAR(50) NOT NULL,
+    description TEXT,
+    event_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+ALTER TABLE audit
+ALTER COLUMN user_id DROP NOT NULL;
+
+ALTER TABLE audit
+DROP CONSTRAINT audit_user_id_fkey,
+ADD CONSTRAINT audit_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL;
+
+CREATE TABLE REVIEWS(
+    review_id SERIAL PRIMARY KEY,
+    appointment_id INT NOT NULL,
+    comment TEXT,
+    rating INT NOT NULL,
+    review_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    FOREIGN KEY (appointment_id) REFERENCES APPOINTMENTS(appointment_id)
+);

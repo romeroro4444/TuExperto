@@ -15,27 +15,6 @@ const MyServices = () => {
   });
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchMyServices = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:4000/my-services", {
-          method: "GET",
-          headers: { token },
-        });
-        const data = await res.json();
-        setServices(data);
-        setState(data.map((s) => !!s.active));
-      } catch (err) {
-        setServices([]);
-        setState([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchMyServices();
-  }, []);
-
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -116,6 +95,41 @@ const MyServices = () => {
       console.error(error);
     }
   };
+  const handleDelete = async (service_id) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:4000/service/${service_id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json", token },
+      });
+      if (res.ok) {
+        setServices((prev) => prev.filter((s) => s.service_id !== service_id));
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    const fetchMyServices = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("http://localhost:4000/my-services", {
+          method: "GET",
+          headers: { token },
+        });
+        const data = await res.json();
+        setServices(data);
+        setState(data.map((s) => !!s.active));
+      } catch (err) {
+        setServices([]);
+        setState([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMyServices();
+  }, []);
 
   return (
     <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-lg p-4 sm:p-8 lg:p-12 mt-10">
@@ -228,7 +242,7 @@ const MyServices = () => {
                     <div className="font-semibold text-[#1E3A8A]">
                       {service.title}
                     </div>
-                    <div className="text-sm text-gray-700">
+                    <div className="text-sm text-gray-700 break-words max-w-xs whitespace-pre-line">
                       {service.description}
                     </div>
                   </td>
@@ -260,7 +274,7 @@ const MyServices = () => {
                     </button>
                     {service.active ? (
                       <button
-                        className="text-red-500 font-medium hover:underline cursor-pointer"
+                        className="text-orange-500 font-medium hover:underline cursor-pointer"
                         onClick={() => handleDeactivate(service.service_id)}
                         disabled={!service.active}
                       >
@@ -275,6 +289,12 @@ const MyServices = () => {
                         Activar
                       </button>
                     )}
+                    <button
+                      className="text-red-500 font-medium hover:underline cursor-pointer ml-2"
+                      onClick={() => handleDelete(service.service_id)}
+                    >
+                      Eliminar
+                    </button>
                   </td>
                 </tr>
               ))}

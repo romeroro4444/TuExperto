@@ -10,6 +10,13 @@ const editClientProfileByToken = async (req, res) => {
   }
   const { name, lastname, telefono } = req.body;
   try {
+    // obtener datos actuales antes de actualizar
+    const prevRes = await pool.query(
+      "SELECT name, lastname, telefono FROM users WHERE user_id = $1",
+      [user_id]
+    );
+    const prev = prevRes.rows[0];
+
     await pool.query(
       `UPDATE users SET
         name = COALESCE($1, name),
@@ -18,6 +25,27 @@ const editClientProfileByToken = async (req, res) => {
       WHERE user_id = $4`,
       [name, lastname, telefono, user_id]
     );
+
+    // Construir descripción con cambios
+    const cambios = [];
+    if (name && name !== prev.name)
+      cambios.push(`name: '${prev.name}' → '${name}'`);
+    if (lastname && lastname !== prev.lastname)
+      cambios.push(`lastname: '${prev.lastname}' → '${lastname}'`);
+    if (telefono && telefono !== prev.telefono)
+      cambios.push(`telefono: '${prev.telefono}' → '${telefono}'`);
+    const descripcion =
+      cambios.length > 0
+        ? `Perfil editado. Cambios: ${cambios.join(", ")}`
+        : "Perfil editado. Sin cambios en los datos.";
+
+    // auditoria
+    await pool.query(
+      `INSERT INTO audit(user_id, affected_table, affected_record_id, action, description) 
+      VALUES ($1,$2,$3,$4,$5)`,
+      [user_id, "USERS", user_id, "PUT", descripcion]
+    );
+
     res.json({ message: "Perfil de cliente actualizado correctamente" });
   } catch (error) {
     console.log(error);
@@ -83,7 +111,27 @@ const editProfileByToken = async (req, res) => {
   }
   const { name, lastname, telefono, description, profession_id } = req.body;
   try {
-    // editar datos de usuario
+    const prevRes = await pool.query(
+      "SELECT name, lastname, telefono FROM users WHERE user_id = $1",
+      [user_id]
+    );
+    const prev = prevRes.rows[0];
+
+    // obtener datos actuales de profesional (si existe)
+    const profRes = await pool.query(
+      `SELECT professional_id FROM professionals WHERE user_id = $1`,
+      [user_id]
+    );
+    let prevProf = null;
+    if (profRes.rows.length > 0) {
+      const professional_id = profRes.rows[0].professional_id;
+      const prevResProf = await pool.query(
+        "SELECT description, profession_id FROM professionals WHERE professional_id = $1",
+        [professional_id]
+      );
+      prevProf = prevResProf.rows[0];
+    }
+    // actualizar datos de usuario
     if (name || lastname || telefono) {
       await pool.query(
         `UPDATE users SET
@@ -94,13 +142,8 @@ const editProfileByToken = async (req, res) => {
         [name, lastname, telefono, user_id]
       );
     }
-    // verificar si es profesional
-    const profRes = await pool.query(
-      `SELECT professional_id FROM professionals WHERE user_id = $1`,
-      [user_id]
-    );
+    // actualizar datos de profesional si existe
     if (profRes.rows.length > 0) {
-      // editar datos de profesional
       await pool.query(
         `UPDATE professionals SET
           description = COALESCE($1, description),
@@ -109,6 +152,38 @@ const editProfileByToken = async (req, res) => {
         [description, profession_id, user_id]
       );
     }
+    const cambios = [];
+    if (name && prev && name !== prev.name)
+      cambios.push(`name: '${prev.name}' → '${name}'`);
+    if (lastname && prev && lastname !== prev.lastname)
+      cambios.push(`lastname: '${prev.lastname}' → '${lastname}'`);
+    if (telefono && prev && telefono !== prev.telefono)
+      cambios.push(`telefono: '${prev.telefono}' → '${telefono}'`);
+    if (profRes.rows.length > 0 && prevProf) {
+      if (description && description !== prevProf.description)
+        cambios.push(
+          `description: '${prevProf.description}' → '${description}'`
+        );
+      if (
+        typeof profession_id !== "undefined" &&
+        prevProf.profession_id !== profession_id
+      )
+        cambios.push(
+          `profession_id: '${prevProf.profession_id}' → '${profession_id}'`
+        );
+    }
+    const descripcion =
+      cambios.length > 0
+        ? `Perfil editado. Cambios: ${cambios.join(", ")}`
+        : "Perfil editado. Sin cambios en los datos.";
+
+    // auditoría
+    await pool.query(
+      `INSERT INTO audit(user_id, affected_table, affected_record_id, action, description) 
+      VALUES ($1,$2,$3,$4,$5)`,
+      [user_id, "USERS", user_id, "PUT", descripcion]
+    );
+
     res.json({ message: "Perfil actualizado correctamente" });
   } catch (error) {
     console.log(error);
@@ -116,7 +191,7 @@ const editProfileByToken = async (req, res) => {
   }
 };
 
-/* // obtiene todos los datos del perfil profesional por user_id
+// obtiene todos los datos del perfil profesional por user_id
 const getProfileByUserId = async (req, res) => {
   const user_id = req.params.user_id;
   if (!user_id || user_id === "null" || user_id === "undefined") {
@@ -165,7 +240,7 @@ const getProfileByUserId = async (req, res) => {
     console.log(error);
     res.status(500).json({ message: "Error al obtener perfil" });
   }
-}; */
+};
 
 // obtiene perfil usando el user_id extraído del token
 const getProfileByToken = async (req, res) => {

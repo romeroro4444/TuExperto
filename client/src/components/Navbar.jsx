@@ -135,26 +135,48 @@ const Navbar = ({ setAuth, isAuthenticated }) => {
                   Mi Perfil
                 </button>
                 {tipoUsuario === "PROFESIONAL" && (
-                  <button
-                    className="block w-full text-left px-4 py-2 text-[#1E3A8A] hover:bg-gray-100"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      navigate("/mis-servicios");
-                    }}
-                  >
-                    Mis Servicios
-                  </button>
+                  <>
+                    <button
+                      className="block w-full text-left px-4 py-2 text-[#1E3A8A] hover:bg-gray-100"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        navigate("/mis-servicios");
+                      }}
+                    >
+                      Mis Servicios
+                    </button>
+                    <button
+                      className="block w-full text-left px-4 py-2 text-[#1E3A8A] hover:bg-gray-100"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        navigate("/my-appointments");
+                      }}
+                    >
+                      Mis Citas
+                    </button>
+                  </>
                 )}
                 {tipoUsuario === "CLIENTE" && (
-                  <button
-                    className="block w-full text-left px-4 py-2 text-[#1E3A8A] hover:bg-gray-100"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      navigate("/mis-solicitudes");
-                    }}
-                  >
-                    Mis Solicitudes
-                  </button>
+                  <>
+                    <button
+                      className="block w-full text-left px-4 py-2 text-[#1E3A8A] hover:bg-gray-100"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        navigate("/mis-solicitudes");
+                      }}
+                    >
+                      Mis Solicitudes
+                    </button>
+                    <button
+                      className="block w-full text-left px-4 py-2 text-[#1E3A8A] hover:bg-gray-100"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        navigate("/client-appointments");
+                      }}
+                    >
+                      Mis Citas
+                    </button>
+                  </>
                 )}
                 <button
                   onClick={logout}
@@ -171,58 +193,52 @@ const Navbar = ({ setAuth, isAuthenticated }) => {
       {menuOpen && (
         <div className="md:hidden absolute top-16 left-0 w-full bg-white shadow-lg z-30">
           <ul className="flex flex-col gap-4 p-6 text-black text-base">
-            <Link
-              to="/"
-              className="hover:text-gray-400"
-              onClick={() => setMenuOpen(false)}
+            <button
+              className="text-left hover:text-gray-400"
+              onClick={() => {
+                setMenuOpen(false);
+                navigate("/");
+              }}
             >
               Inicio
-            </Link>
-            <Link
-              to="/services"
-              className="hover:text-gray-400"
-              onClick={() => setMenuOpen(false)}
+            </button>
+            <button
+              className="text-left hover:text-gray-400"
+              onClick={() => {
+                setMenuOpen(false);
+                navigate("/services");
+              }}
             >
               Servicios
-            </Link>
-            <Link
-              to="/requests"
-              className="hover:text-gray-400"
-              onClick={() => setMenuOpen(false)}
+            </button>
+            <button
+              className="text-left hover:text-gray-400"
+              onClick={() => {
+                setMenuOpen(false);
+                navigate("/requests");
+              }}
             >
               Solicitudes
-            </Link>
-            {isLoggedIn && tipoUsuario === "PROFESIONAL" && (
-              <Link
-                to="/mis-servicios"
-                className="hover:text-gray-400"
-                onClick={() => setMenuOpen(false)}
-              >
-                Mis Servicios
-              </Link>
-            )}
-            {isLoggedIn && tipoUsuario === "CLIENTE" && (
-              <Link
-                to="/mis-solicitudes"
-                className="hover:text-gray-400"
-                onClick={() => setMenuOpen(false)}
-              >
-                Mis Solicitudes
-              </Link>
-            )}
-            <Link
-              to="/"
-              className="hover:text-gray-400"
-              onClick={() => setMenuOpen(false)}
+            </button>
+            <button
+              className="text-left hover:text-gray-400"
+              onClick={() => {
+                setMenuOpen(false);
+                navigate("/");
+              }}
             >
               Acerca de
-            </Link>
+            </button>
             {!isLoggedIn ? (
-              <Link to="/login" onClick={() => setMenuOpen(false)}>
-                <button className="bg-[#FE7743] text-white px-8 py-2 rounded-full w-full mt-2 transition-colors duration-200 hover:bg-[#E56332] cursor-pointer">
-                  Iniciar Sesión
-                </button>
-              </Link>
+              <button
+                className="bg-[#FE7743] text-white px-8 py-2 rounded-full w-full mt-2 transition-colors duration-200 hover:bg-[#E56332] cursor-pointer"
+                onClick={() => {
+                  setMenuOpen(false);
+                  navigate("/login");
+                }}
+              >
+                Iniciar Sesión
+              </button>
             ) : (
               <>
                 <button
@@ -234,6 +250,50 @@ const Navbar = ({ setAuth, isAuthenticated }) => {
                 >
                   Mi Perfil
                 </button>
+                {isLoggedIn && tipoUsuario === "PROFESIONAL" && (
+                  <>
+                    <button
+                      className="block w-full text-left px-4 py-2 text-[#1E3A8A] hover:bg-gray-100"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        navigate("/mis-servicios");
+                      }}
+                    >
+                      Mis Servicios
+                    </button>
+                    <button
+                      className="block w-full text-left px-4 py-2 text-[#1E3A8A] hover:bg-gray-100"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        navigate("/my-appointments");
+                      }}
+                    >
+                      Mis Citas
+                    </button>
+                  </>
+                )}
+                {isLoggedIn && tipoUsuario === "CLIENTE" && (
+                  <>
+                    <button
+                      className="block w-full text-left px-4 py-2 text-[#1E3A8A] hover:bg-gray-100"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        navigate("/mis-solicitudes");
+                      }}
+                    >
+                      Mis Solicitudes
+                    </button>
+                    <button
+                      className="block w-full text-left px-4 py-2 text-[#1E3A8A] hover:bg-gray-100"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        navigate("/client-appointments");
+                      }}
+                    >
+                      Mis Citas
+                    </button>
+                  </>
+                )}
                 <button
                   onClick={logout}
                   className="block w-full text-left px-4 py-2 text-[#1E3A8A] hover:bg-gray-100"

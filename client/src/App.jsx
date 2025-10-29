@@ -13,6 +13,9 @@ import EditProfile from "./components/EditProfile";
 import EditService from "./components/EditService";
 import MyRequests from "./components/MyRequests";
 import EditRequest from "./components/EditRequest";
+import Appointment from "./components/Appointment";
+import MyAppointments from "./components/MyAppointments";
+import ClientAppointments from "./components/ClientAppointments";
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -84,6 +87,26 @@ const App = () => {
             }
           />
           <Route
+            path="/my-appointments"
+            element={
+              isAuthenticated && tipoUsuario === "PROFESIONAL" ? (
+                <MyAppointments />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="/client-appointments"
+            element={
+              isAuthenticated && tipoUsuario === "CLIENTE" ? (
+                <ClientAppointments />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
             path="/mis-solicitudes"
             element={
               isAuthenticated && tipoUsuario === "CLIENTE" ? (
@@ -149,6 +172,7 @@ const App = () => {
               )
             }
           />
+          <Route path="/service/:service_id" element={<Appointment />} />
         </Routes>
         <Footer />
       </BrowserRouter>

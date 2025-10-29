@@ -17,6 +17,9 @@ app.use(require("./routes/professionals.routes"));
 app.use(require("./routes/professions.routes"));
 app.use(require("./routes/services.routes"));
 app.use(require("./routes/requests.route"));
+app.use(require("./routes/appointments.routes"));
+app.use(require("./routes/payment.routes"));
+app.use(require("./routes/reviews.routes"));
 
 app.listen(PORT);
 console.log("Server on port", PORT);

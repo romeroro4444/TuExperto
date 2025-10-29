@@ -24,15 +24,14 @@ const EditService = () => {
           headers: { token },
         });
         const data = await res.json();
-        if (data && data.length > 0) {
-          const s = data[0];
+        if (data && data.service_id) {
           setForm({
-            title: s.title || "",
-            description: s.description || "",
-            price: s.price || "",
-            modality: s.modality || "",
-            duration: s.duration || "",
-            service_id: s.service_id,
+            title: data.title || "",
+            description: data.description || "",
+            price: data.price || "",
+            modality: data.modality || "",
+            duration: data.duration || "",
+            service_id: data.service_id,
           });
         }
       } catch (err) {

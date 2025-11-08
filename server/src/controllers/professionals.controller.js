@@ -2,7 +2,11 @@ const pool = require("./../db");
 
 const getProfessionals = async (req, res) => {
   try {
-    const response = await pool.query("SELECT * FROM professionals");
+    const response = await pool.query(`SELECT p.*, pt.profession_name,
+      u.name, u.lastname, u.rut
+      FROM professionals p
+      LEFT JOIN professions pt ON p.profession_id = pt.profession_id
+      LEFT JOIN users u ON p.user_id = u.user_id`);
     res.json(response.rows);
   } catch (error) {
     console.log(error);

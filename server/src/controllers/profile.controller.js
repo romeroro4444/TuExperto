@@ -72,6 +72,16 @@ const getUserTypeByToken = async (req, res) => {
     if (typeRes.rows.length === 0) {
       return res.status(404).json({ message: "Tipo de usuario no encontrado" });
     }
+
+    // Disable caching for this endpoint to avoid browser 304 cached responses
+    // which can make the frontend receive no body and treat the response as empty.
+    res.set(
+      "Cache-Control",
+      "no-store, no-cache, must-revalidate, proxy-revalidate"
+    );
+    res.set("Pragma", "no-cache");
+    res.set("Expires", "0");
+
     res.json({ tipo_usuario: typeRes.rows[0].type_name });
   } catch (error) {
     console.log(error);

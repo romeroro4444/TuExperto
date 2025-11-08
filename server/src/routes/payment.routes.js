@@ -1,10 +1,17 @@
 const { Router } = require("express");
-const router = Router();
 const {
-  createPaymentSession,
-} = require("../controllers/payment.controller.js");
+  createOrder,
+  processPayment,
+  handleWebhook,
+} = require("../controllers/payment.controller");
 
-// POST /api/payments/session
-router.post("/session", createPaymentSession);
+const router = Router();
+
+router.post("/create-order", createOrder);
+router.post("/process_payment", processPayment);
+router.get("/success", (req, res) => res.send("success"));
+router.get("/failure", (req, res) => res.send("failure"));
+router.get("/pending", (req, res) => res.send("pending"));
+router.post("/webhook", handleWebhook);
 
 module.exports = router;

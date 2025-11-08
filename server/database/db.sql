@@ -173,3 +173,36 @@ CREATE TABLE REVIEWS(
     review_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     FOREIGN KEY (appointment_id) REFERENCES APPOINTMENTS(appointment_id)
 );
+
+ALTER TABLE reviews ADD COLUMN done BOOLEAN DEFAULT FALSE;
+
+ALTER TABLE notifications
+DROP CONSTRAINT notifications_appointment_id_fkey;
+
+ALTER TABLE notifications
+ADD CONSTRAINT notifications_appointment_id_fkey
+FOREIGN KEY (appointment_id) REFERENCES appointments(appointment_id)
+ON DELETE CASCADE;
+
+ALTER TABLE reviews
+DROP CONSTRAINT reviews_appointment_id_fkey;
+
+ALTER TABLE reviews
+ADD CONSTRAINT reviews_appointment_id_fkey
+FOREIGN KEY (appointment_id) REFERENCES appointments(appointment_id)
+ON DELETE CASCADE;
+
+CREATE TABLE COMPLAINTS(
+    complaint_id SERIAL PRIMARY KEY,
+    appointment_id INT NOT NULL,
+    service_id INT NOT NULL,
+    reason VARCHAR(50) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    claim_status VARCHAR(50) NOT NULL,
+    date_of_complaint TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    date_of_incident TIMESTAMP NOT NULL,
+    evidence VARCHAR(255),
+    FOREIGN KEY (appointment_id) REFERENCES APPOINTMENTS(appointment_id),
+    FOREIGN KEY (service_id) REFERENCES SERVICES(service_id)
+);

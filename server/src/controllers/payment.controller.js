@@ -1,47 +1,70 @@
-const Stripe = require("stripe");
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const pool = require("../db");
+const { MercadoPagoConfig, Preference, Payment } = require("mercadopago");
 
-// Controlador para pagos
-const createPaymentSession = async (req, res) => {
+// Webhook para MercadoPago
+const handleWebhook = async (req, res) => {
   try {
-    const { service_id } = req.body;
-    if (!service_id) {
-      return res.status(400).json({ error: "Falta el service_id" });
-    }
-    // Buscar el servicio en la base de datos
-    const result = await pool.query(
-      `SELECT title, description, price FROM services WHERE service_id = $1`,
-      [service_id]
-    );
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Servicio no encontrado" });
-    }
-    const { title, description, price } = result.rows[0];
-    const session = await stripe.checkout.sessions.create({
-      line_items: [
-        {
-          price_data: {
-            product_data: {
-              name: title,
-              description: description,
-            },
-            currency: "clp",
-            unit_amount: price,
-          },
-          quantity: 1,
-        },
-      ],
-      mode: "payment",
-      success_url: process.env.SUCCESS_URL || "https://tuapp.com/success",
-      cancel_url: process.env.CANCEL_URL || "https://tuapp.com/cancel",
-    });
-    res.json({ url: session.url });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    // MercadoPago envía la notificación en req.body
+    console.log("Webhook recibido:", req.body);
+    // Aquí puedes procesar y guardar la info en la base de datos si lo necesitas
+    res.status(200).send("Webhook recibido");
+  } catch (error) {
+    console.error("Error en webhook:", error);
+    res.status(500).send("Error en webhook");
   }
 };
 
-module.exports = {
-  createPaymentSession,
+const client = new MercadoPagoConfig({
+  accessToken:
+    "APP_USR-8982834262475149-103100-49c5d972719e44be5e8ce7db09161adc-2588010389", // Usa tu token sandbox aquí
+});
+
+const preference = new Preference(client);
+const payment = new Payment(client);
+
+const { v4: uuidv4 } = require("uuid");
+
+const createOrder = async (req, res) => {
+  try {
+    const { title, price } = req.body;
+    const external_reference = uuidv4();
+    const result = await preference.create({
+      body: {
+        items: [
+          {
+            title: title || "Servicio",
+            unit_price: price || 0,
+            currency_id: "CLP",
+            quantity: 1,
+          },
+        ],
+        purpose: "wallet_purchase",
+        external_reference,
+        back_urls: {
+          success: "http://localhost:4000/success",
+          failure: "http://localhost:4000/failure",
+          pending: "http://localhost:4000/pending",
+        },
+      },
+    });
+
+    res.json({ preferenceId: String(result.id), external_reference });
+  } catch (error) {
+    console.error("MercadoPago error:", error);
+    res.status(500).json(error);
+  }
 };
+
+const processPayment = async (req, res) => {
+  try {
+    const paymentData = req.body;
+    const result = await payment.create({ body: paymentData });
+    res.json({ status: "success", mp: result });
+  } catch (error) {
+    console.error("Error al procesar el pago:", error);
+    res
+      .status(500)
+      .json({ error: "Error al procesar el pago", details: error });
+  }
+};
+
+module.exports = { createOrder, processPayment, handleWebhook };

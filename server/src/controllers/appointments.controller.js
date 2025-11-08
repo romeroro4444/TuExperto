@@ -3,6 +3,7 @@ const {
   sendAppointmentEmail,
   sendCancelAppointmentEmail,
   sendDecisionAppointmentEmail,
+  sendPayAppointmentEmail,
 } = require("../services/email.service.js");
 
 const makeAppointment = async (req, res) => {
@@ -89,10 +90,29 @@ const makeAppointment = async (req, res) => {
 
 const getAppointments = async (req, res) => {
   try {
-    const response = await pool.query("SELECT * FROM appointments");
+    const query = `
+      SELECT 
+        a.appointment_id,
+        a.service_id,
+        a.user_id AS client_id,
+        cu.rut AS client_rut,
+        prof.professional_id,
+        pu.rut AS professional_rut,
+        s.title AS service_title,
+        a.status,
+        a.reservation_date
+      FROM appointments a
+      LEFT JOIN users cu ON a.user_id = cu.user_id
+      LEFT JOIN services s ON a.service_id = s.service_id
+      LEFT JOIN professionals prof ON s.professional_id = prof.professional_id
+      LEFT JOIN users pu ON prof.user_id = pu.user_id
+      ORDER BY a.reservation_date DESC
+    `;
+    const response = await pool.query(query);
     res.json(response.rows);
   } catch (error) {
-    console.log(error);
+    console.error(error);
+    res.status(500).json({ error: "Error al obtener las citas" });
   }
 };
 const getNotifications = async (req, res) => {
@@ -373,6 +393,135 @@ const decisionAppointment = async (req, res) => {
   }
 };
 
+const payAppointment = async (req, res) => {
+  try {
+    const appointment_id = req.params.appointment_id;
+    const { status } = req.body; // "PAGADA"
+
+    const appointmentRes = await pool.query(
+      "SELECT service_id, user_id, reservation_date FROM appointments WHERE appointment_id = $1",
+      [appointment_id]
+    );
+    const appointment = appointmentRes.rows[0];
+    if (!appointment) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    await pool.query(
+      "UPDATE appointments SET status = $1 WHERE appointment_id = $2",
+      ["PAGADA", appointment_id]
+    );
+    // auditorio
+    await pool.query(
+      `INSERT INTO audit(user_id, affected_table, affected_record_id, action, description)
+        VALUES ($1,$2,$3,$4,$5)`,
+      [
+        appointment.user_id,
+        "appointments",
+        appointment_id,
+        "UPDATE",
+        `Decisión de cita PAGADA para servicio ${appointment.service_id} en fecha ${appointment.reservation_date}`,
+      ]
+    );
+    // datos del profesional
+    const profQuery = `
+      SELECT u.email AS professional_email, u.name AS professional_name, u.lastname AS professional_lastname
+      FROM services s
+      JOIN professionals prof ON s.professional_id = prof.professional_id
+      JOIN users u ON prof.user_id = u.user_id
+      WHERE s.service_id = $1
+    `;
+    const profRes = await pool.query(profQuery, [appointment.service_id]);
+    const profesional = profRes.rows[0];
+
+    // datos del cliente
+    const clientQuery =
+      "SELECT name, lastname, email, telefono FROM users WHERE user_id = $1";
+    const clientRes = await pool.query(clientQuery, [appointment.user_id]);
+    const cliente = clientRes.rows[0];
+
+    // datos del servicio
+    const serviceQuery = "SELECT title FROM services WHERE service_id = $1";
+    const serviceRes = await pool.query(serviceQuery, [appointment.service_id]);
+    const service = serviceRes.rows[0];
+
+    // enviar correo y notificación de pago
+    const subject = "¡Su cita fue pagada!";
+    const message = `¡La cita con ${cliente.name} ${cliente.lastname} para el servicio de ${service.title} para el día y hora ${appointment.reservation_date} fue pagada correctamente, por favor contactse con el cliente mediante el correo: ${cliente.email} o el número de teléfono: ${cliente.telefono}`;
+    const notificationType = "CITA PAGADA";
+    const htmlContent = `
+      <html>
+        <body>
+          <h1>¡Cita pagada!</h1>
+          <p>${message}</p>
+        </body>
+      </html>
+    `;
+    await sendPayAppointmentEmail({
+      toEmail: profesional.professional_email,
+      toName: profesional.name,
+      subject,
+      htmlContent,
+    });
+
+    // insertar en notifications
+    const notiQuery = `
+      INSERT INTO notifications (
+        appointment_id,
+        notification_type,
+        recipient_email,
+        subject,
+        mesagge,
+        date_sent,
+        sent_status
+      ) VALUES ($1, $2, $3, $4, $5, NOW(), $6)
+      RETURNING *
+    `;
+
+    const notiValues = [
+      appointment_id,
+      notificationType,
+      profesional.professional_email,
+      subject,
+      message,
+      "ENVIADO",
+    ];
+
+    await pool.query(notiQuery, notiValues);
+    res.json({ message: "Cita pagada correctamente" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al actualizar la cita" });
+  }
+};
+
+const getAppointmentById = async (req, res) => {
+  try {
+    const appointment_id = req.params.appointment_id;
+    const query = `
+      SELECT 
+        a.appointment_id,
+        a.service_id,
+        a.reservation_date,
+        s.title AS service_title,
+        pu.name AS professional_name
+      FROM appointments a
+      LEFT JOIN services s ON a.service_id = s.service_id
+      LEFT JOIN professionals prof ON s.professional_id = prof.professional_id
+      LEFT JOIN users pu ON prof.user_id = pu.user_id
+      WHERE a.appointment_id = $1
+    `;
+    const response = await pool.query(query, [appointment_id]);
+    if (response.rows.length === 0) {
+      return res.status(404).json({ error: "Cita no encontrada" });
+    }
+    res.json(response.rows[0]);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Error al obtener la cita" });
+  }
+};
+
 module.exports = {
   makeAppointment,
   getAppointments,
@@ -380,4 +529,6 @@ module.exports = {
   getNotifications,
   cancelAppointment,
   decisionAppointment,
+  payAppointment,
+  getAppointmentById,
 };

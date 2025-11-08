@@ -35,14 +35,17 @@ const getMyServices = async (req, res) => {
 const getServices = async (req, res) => {
   try {
     const response = await pool.query(`
-      SELECT services.*, professions.profession_name
-      FROM services
-      JOIN professionals ON services.professional_id = professionals.professional_id
-      JOIN professions ON professionals.profession_id = professions.profession_id
+      SELECT s.*, p.profession_name, u.rut
+      FROM services s
+      JOIN professionals prof ON s.professional_id = prof.professional_id
+      JOIN professions p ON prof.profession_id = p.profession_id
+      JOIN users u ON prof.user_id = u.user_id
+      ORDER BY s.publication_date DESC
     `);
     res.json(response.rows);
   } catch (error) {
-    console.log(error);
+    console.error(error);
+    res.status(500).json({ error: "Error al obtener servicios" });
   }
 };
 

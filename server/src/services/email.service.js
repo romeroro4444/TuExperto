@@ -131,3 +131,27 @@ export const sendDecisionAppointmentEmail = async ({
     throw error;
   }
 };
+
+export const sendPayAppointmentEmail = async ({
+  toEmail,
+  toName,
+  subject,
+  htmlContent,
+}) => {
+  try {
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.subject = subject;
+    sendSmtpEmail.to = [{ email: toEmail, name: toName }];
+    sendSmtpEmail.htmlContent = htmlContent;
+    sendSmtpEmail.sender = {
+      name: "TuExperto",
+      email: "rarr.14.r@gmail.com",
+    };
+    const result = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log("Correo enviado:", result);
+    return result;
+  } catch (error) {
+    console.error("Error enviando correo:", error);
+    throw error;
+  }
+};

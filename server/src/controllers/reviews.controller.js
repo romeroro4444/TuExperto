@@ -45,10 +45,22 @@ const getMyReviews = async (req, res) => {
 
 const getReviews = async (req, res) => {
   try {
-    const response = await pool.query("SELECT * FROM reviews");
+    const query = `
+      SELECT r.*, 
+             cu.rut AS client_rut,
+             pu.rut AS professional_rut
+      FROM reviews r
+      LEFT JOIN appointments a ON r.appointment_id = a.appointment_id
+      LEFT JOIN users cu ON a.user_id = cu.user_id
+      LEFT JOIN services s ON a.service_id = s.service_id
+      LEFT JOIN professionals prof ON s.professional_id = prof.professional_id
+      LEFT JOIN users pu ON prof.user_id = pu.user_id
+    `;
+    const response = await pool.query(query);
     res.json(response.rows);
   } catch (error) {
-    console.log(error);
+    console.error(error);
+    res.status(500).json({ error: "Error al obtener reseñas" });
   }
 };
 

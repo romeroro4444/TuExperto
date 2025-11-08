@@ -20,6 +20,7 @@ app.use(require("./routes/requests.route"));
 app.use(require("./routes/appointments.routes"));
 app.use(require("./routes/payment.routes"));
 app.use(require("./routes/reviews.routes"));
+app.use(require("./routes/complaint.routes"));
 
 app.listen(PORT);
 console.log("Server on port", PORT);

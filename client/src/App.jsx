@@ -1,18 +1,23 @@
 import React, { useEffect, useState } from "react";
-import Navbar from "./components/Navbar";
+import Navbar from "./components/common/Navbar";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
-import Home from "./components/Home";
-import Services from "./components/Services";
-import Requests from "./components/Requests";
-import MyServices from "./components/MyServices";
-import Footer from "./components/Footer";
-import Login from "./components/Login";
-import Register from "./components/Register";
-import Profile from "./components/Profile";
-import EditProfile from "./components/EditProfile";
-import EditService from "./components/EditService";
-import MyRequests from "./components/MyRequests";
-import EditRequest from "./components/EditRequest";
+import Home from "./components/home/Home";
+import Services from "./components/services/Services";
+import Requests from "./components/requests/Requests";
+import MyServices from "./components/services/MyServices";
+import Footer from "./components/common/Footer";
+import Login from "./components/auth/Login";
+import Register from "./components/auth/Register";
+import Profile from "./components/profile/Profile";
+import EditProfile from "./components/profile/EditProfile";
+import EditService from "./components/services/EditService";
+import MyRequests from "./components/requests/MyRequests";
+import EditRequest from "./components/requests/EditRequest";
+import Appointment from "./components/appointments/Appointment";
+import MyAppointments from "./components/appointments/MyAppointments";
+import ClientAppointments from "./components/appointments/ClientAppointments";
+import Report from "./components/report/Report";
+import AdminPanel from "./components/admin/AdminPanel";
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -84,6 +89,26 @@ const App = () => {
             }
           />
           <Route
+            path="/my-appointments"
+            element={
+              isAuthenticated && tipoUsuario === "PROFESIONAL" ? (
+                <MyAppointments />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
+            path="/client-appointments"
+            element={
+              isAuthenticated && tipoUsuario === "CLIENTE" ? (
+                <ClientAppointments />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route
             path="/mis-solicitudes"
             element={
               isAuthenticated && tipoUsuario === "CLIENTE" ? (
@@ -144,6 +169,18 @@ const App = () => {
             element={
               isAuthenticated && tipoUsuario === "PROFESIONAL" ? (
                 <EditService />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            }
+          />
+          <Route path="/service/:service_id" element={<Appointment />} />
+          <Route path="/reclamo" element={<Report />} />
+          <Route
+            path="/admin-panel"
+            element={
+              isAuthenticated && tipoUsuario === "ADMIN" ? (
+                <AdminPanel />
               ) : (
                 <Navigate to="/" replace />
               )

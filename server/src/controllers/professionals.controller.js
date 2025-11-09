@@ -2,7 +2,11 @@ const pool = require("./../db");
 
 const getProfessionals = async (req, res) => {
   try {
-    const response = await pool.query("SELECT * FROM professionals");
+    const response = await pool.query(`SELECT p.*, pt.profession_name,
+      u.name, u.lastname, u.rut
+      FROM professionals p
+      LEFT JOIN professions pt ON p.profession_id = pt.profession_id
+      LEFT JOIN users u ON p.user_id = u.user_id`);
     res.json(response.rows);
   } catch (error) {
     console.log(error);
@@ -41,6 +45,18 @@ const createProfessional = async (req, res) => {
     const values = [profession_id, user_id, description];
     const response = await pool.query(text, values);
     const professional_id = response.rows[0].professional_id;
+
+    await pool.query(
+      `INSERT INTO audit(user_id, affected_table, affected_record_id, action, description) 
+      VALUES ($1,$2,$3,$4,$5)`,
+      [
+        user_id,
+        "PROFESSIONALS",
+        professional_id,
+        "POST",
+        `Se registro un nuevo profesional al sistema`,
+      ]
+    );
 
     let specs = [];
     if (specialization) {

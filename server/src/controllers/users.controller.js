@@ -4,7 +4,12 @@ const jwtGenerator = require("./../utils/jwtGenerator");
 
 const getUsers = async (req, res) => {
   try {
-    const response = await pool.query("SELECT * FROM users");
+    const response = await pool.query(
+      `SELECT u.*, ut.type_name AS tipo_usuario
+       FROM users u
+       LEFT JOIN users_usertype uut ON u.user_id = uut.user_id
+       LEFT JOIN user_types ut ON uut.user_type_id = ut.user_type_id`
+    );
     res.json(response.rows);
   } catch (error) {
     console.log(error);
@@ -61,10 +66,16 @@ const createUser = async (req, res) => {
     }
     const id_tipo_usuario = tipoRes.rows[0].user_type_id;
 
-    // Insertar en Usuarios_TiposUsuarios
+    // insertar en Usuarios_TiposUsuarios
     await pool.query(
       "INSERT INTO USERS_USERTYPE (user_type_id, user_id) VALUES ($1, $2)",
       [id_tipo_usuario, user_id]
+    );
+
+    await pool.query(
+      `INSERT INTO audit(user_id, affected_table, affected_record_id, action, description) 
+      VALUES ($1,$2,$3,$4,$5)`,
+      [user_id, "USERS", user_id, "POST", "Nuevo usuario registrado"]
     );
 
     // generate our jwt token
@@ -92,8 +103,14 @@ const deleteUserById = async (req, res) => {
       user_id,
     ]);
     const text = "DELETE FROM users WHERE user_id = $1";
+    await pool.query(
+      `INSERT INTO audit(user_id, affected_table, affected_record_id, action, description) 
+      VALUES ($1,$2,$3,$4,$5)`,
+      [user_id, "USERS", user_id, "DELETE", "Usuario eliminado"]
+    );
     const response = await pool.query(text, [user_id]);
     console.log(response);
+
     res.json({
       message: `User with user_id ${user_id} deleted`,
     });
@@ -110,6 +127,11 @@ const editUser = async (req, res) => {
       "UPDATE users SET name = $1, lastname = $2, email = $3, password = $4, telefono = $5 WHERE user_id = $6";
     const values = [name, lastname, email, password, telefono, user_id];
     const response = await pool.query(text, values);
+    await pool.query(
+      `INSERT INTO audit(user_id, affected_table, affected_record_id, action, description) 
+      VALUES ($1,$2,$3,$4,$5)`,
+      [user_id, "USERS", user_id, "PUT", "Usuario editado"]
+    );
     console.log(response);
     res.json({
       message: "user edited succesfully",
@@ -125,23 +147,51 @@ const editUser = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await pool.query("SELECT * FROM users WHERE email = $1", [
+    const userRes = await pool.query("SELECT * FROM users WHERE email = $1", [
       email,
     ]);
 
-    if (user.rows.length === 0) {
+    if (userRes.rows.length === 0) {
       return res.status(401).json("Email/Contraseña incorrecto");
     }
-    // check if incoming password is the same the db password
 
-    const validPassword = await bcrypt.compare(password, user.rows[0].password);
+    const user = userRes.rows[0];
+    const storedPassword = user.password;
 
-    if (!validPassword) {
+    // If stored password looks like bcrypt, use bcrypt.compare as before
+    let passwordMatches = false;
+    if (
+      typeof storedPassword === "string" &&
+      (storedPassword.startsWith("$2a$") ||
+        storedPassword.startsWith("$2b$") ||
+        storedPassword.startsWith("$2y$"))
+    ) {
+      passwordMatches = await bcrypt.compare(password, storedPassword);
+    } else {
+      // Non-bcrypt password stored. Allow only if the user is ADMIN and the plaintext matches.
+      try {
+        const tipoRes = await pool.query(
+          `SELECT ut.type_name FROM users_usertype uut JOIN user_types ut ON uut.user_type_id = ut.user_type_id WHERE uut.user_id = $1`,
+          [user.user_id]
+        );
+        const tipo = tipoRes.rows[0] ? tipoRes.rows[0].type_name : null;
+        if (tipo === "ADMIN" && password === storedPassword) {
+          passwordMatches = true;
+        }
+      } catch (err) {
+        console.error(
+          "Error comprobando tipo de usuario para login legacy:",
+          err
+        );
+      }
+    }
+
+    if (!passwordMatches) {
       return res.status(401).json("Email/Contraseña incorrecto");
     }
-    //give them jwt token
 
-    const token = jwtGenerator(user.rows[0].user_id);
+    // give them jwt token
+    const token = jwtGenerator(user.user_id);
     res.json({ token });
   } catch (error) {
     console.error(error.message);
@@ -174,6 +224,20 @@ const getFullName = async (req, res) => {
   }
 };
 
+const getAudit = async (req, res) => {
+  try {
+    const response = await pool.query(
+      `SELECT a.*, u.rut AS user_rut, u.name AS user_name
+       FROM audit a
+       LEFT JOIN users u ON a.user_id = u.user_id
+       ORDER BY a.event_date DESC`
+    );
+    res.json(response.rows);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 module.exports = {
   getUsers,
   getUserById,
@@ -183,4 +247,5 @@ module.exports = {
   login,
   verify,
   getFullName,
+  getAudit,
 };

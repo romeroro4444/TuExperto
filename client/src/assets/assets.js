@@ -10,6 +10,8 @@ import appointmentIcon from "./appointmentIcon.svg";
 import notificationicon from "./notificationIcon.svg";
 import reviewIcon from "./reviewIcon.svg";
 import complaintIcon from "./complaintIcon.svg";
+import verifyIcon from "./verifyaccount.svg";
+import lookingfor from "./lookingfor.svg";
 
 export const assets = {
   header,
@@ -24,4 +26,6 @@ export const assets = {
   notificationicon,
   reviewIcon,
   complaintIcon,
+  verifyIcon,
+  lookingfor,
 };

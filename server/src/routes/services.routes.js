@@ -9,6 +9,8 @@ const {
   editServiceById,
   changeToDeactivate,
   changeToActivate,
+  approveService,
+  rejectService,
   editServiceByToken,
 } = require("../controllers/services.controller");
 
@@ -22,6 +24,10 @@ router.put("/service/:service_id", editServiceById);
 //activar y desactivar servicio
 router.put("/service/:service_id/deactivate", changeToDeactivate);
 router.put("/service/:service_id/activate", changeToActivate);
+
+// admin moderation routes
+router.put("/service/:service_id/approve", authorization, approveService);
+router.put("/service/:service_id/reject", authorization, rejectService);
 
 //editar servicio
 router.put("/editing-service", authorization, editServiceByToken);

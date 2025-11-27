@@ -13,6 +13,8 @@ const {
   editRequestByToken,
   changeToActivateRequest,
   changeToDeactivateRequest,
+  approveRequest,
+  rejectRequest,
   createRequestWithUserId,
 } = require("./../controllers/requests.controller");
 
@@ -25,6 +27,10 @@ router.put("/request/:request_id", editRequestById);
 router.put("/request/:request_id/deactivate", changeToDeactivateRequest);
 router.put("/request/:request_id/activate", changeToActivateRequest);
 router.get("/my-requests", authorization, getMyRequests);
+
+// admin moderation routes for requests
+router.put("/request/:request_id/approve", authorization, approveRequest);
+router.put("/request/:request_id/reject", authorization, rejectRequest);
 
 //editar solicitud
 router.put("/editing-request", authorization, editRequestByToken);

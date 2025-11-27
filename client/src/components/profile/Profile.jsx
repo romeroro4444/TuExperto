@@ -1,13 +1,39 @@
 import React, { useEffect, useState } from "react";
+import toast, { Toaster } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import ServiceCard from "../common/ServiceCard";
+import { assets } from "./../../assets/assets";
 
 const Profile = ({ tipo_usuario }) => {
   const navigate = useNavigate();
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [professionalReviews, setProfessionalReviews] = useState([]);
+  const [services, setServices] = useState([]);
+  const [state, setState] = useState([]);
+  const [reviewCount, setReviewCount] = useState(null);
+  const [requestSent, setRequestSent] = useState(false);
+  const [confirmVerify, setConfirmVerify] = useState({ open: false });
 
   useEffect(() => {
+    const fetchMyServices = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("http://localhost:4000/my-services", {
+          method: "GET",
+          headers: { token },
+        });
+        const data = await res.json();
+        setServices(data);
+        setState(data.map((s) => !!s.active));
+      } catch (err) {
+        setServices([]);
+        setState([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     const fetchProfile = async () => {
       const token = localStorage.getItem("token");
       let url = "";
@@ -29,12 +55,14 @@ const Profile = ({ tipo_usuario }) => {
             profession: data.professional.profession_name || "",
             about: data.professional.description || "",
             specializations: data.specializations || [],
-            services: "En Construcción",
-            reviews: "En Construcción",
+            services: "No hay servicios",
+            reviews: "No hay reseñas",
             // agregar identificadores para filtrar reseñas
             rut: data.user.rut || null,
             professional_id: data.professional.professional_id || null,
+            verified: data.professional.verified || false,
           });
+          setReviewCount(data.professional.review_count ?? 0);
         } else if (tipo_usuario !== "PROFESIONAL" && data.user) {
           setProfileData({
             name: data.user.name || "",
@@ -45,13 +73,36 @@ const Profile = ({ tipo_usuario }) => {
         } else {
           setProfileData(null);
         }
+
         setLoading(false);
       } catch (err) {
         setLoading(false);
       }
     };
+
     fetchProfile();
+    fetchMyServices();
   }, [tipo_usuario]);
+
+  const handleConfirmVerify = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:4000/verify-request", {
+        method: "POST",
+        headers: { token },
+      });
+      if (res.ok) {
+        setRequestSent(true);
+        setConfirmVerify({ open: false });
+        toast.success("Solicitud enviada al administrador");
+      } else {
+        const err = await res.json();
+        toast.error(err.message || "Error enviando solicitud");
+      }
+    } catch (err) {
+      toast.error("Error de conexión");
+    }
+  };
 
   useEffect(() => {
     const fetchProfessionalReviews = async () => {
@@ -123,6 +174,7 @@ const Profile = ({ tipo_usuario }) => {
 
   return (
     <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-8 mt-8">
+      <Toaster />
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center text-3xl font-bold text-gray-500">
@@ -156,21 +208,41 @@ const Profile = ({ tipo_usuario }) => {
             <p className="text-gray-600">{profileData.profession}</p>
           </div>
         </div>
-        <button className="bg-[#1E3A8A] text-white px-6 py-2 rounded-full font-semibold hover:bg-[#16306b] transition-colors">
-          Contactar
-        </button>
+        <div className="flex flex-col items-end">
+          {!profileData?.verified && (
+            <div>
+              <span
+                title={
+                  (reviewCount ?? 0) < 5
+                    ? "Se requieren 5 reseñas para verificar"
+                    : ""
+                }
+              >
+                <button
+                  onClick={() => setConfirmVerify({ open: true })}
+                  disabled={(reviewCount ?? 0) < 5 || requestSent}
+                  className={`px-6 py-2 rounded-full font-semibold transition-colors ${
+                    (reviewCount ?? 0) < 5 || requestSent
+                      ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                      : "bg-[#1E3A8A] text-white hover:bg-[#16306b]"
+                  }`}
+                >
+                  {requestSent ? "Solicitud enviada" : "Verificar cuenta"}
+                </button>
+              </span>
+              {(reviewCount ?? 0) < 5 && (
+                <p className="text-xs text-gray-500 mt-2">
+                  Se requieren 5 reseñas o más para verificar la cuenta.
+                </p>
+              )}
+            </div>
+          )}
+          {profileData?.verified && (
+            <img src={assets.verifyIcon} alt="Verificado" className="w-6 h-6" />
+          )}
+        </div>
       </div>
-
-      <div className="border-b mb-6">
-        <nav className="flex gap-8 text-gray-500 text-sm">
-          <span className="font-semibold text-[#1E3A8A] cursor-pointer">
-            Acerca de
-          </span>
-          <span className="cursor-pointer">Reseñas</span>
-          <span className="cursor-pointer">Disponibilidad</span>
-        </nav>
-      </div>
-
+      <div className="border-b mb-6"></div>
       <section className="mb-6">
         <h3 className="text-lg font-semibold mb-2">Acerca de</h3>
         <p className="text-gray-700 leading-relaxed">{profileData.about}</p>
@@ -192,11 +264,29 @@ const Profile = ({ tipo_usuario }) => {
 
       <section className="mb-6">
         <h3 className="text-lg font-semibold mb-2">Servicios</h3>
-        <p className="text-gray-700 leading-relaxed">{profileData.services}</p>
+        {loading ? (
+          <div className="text-center text-[#1E3A8A]">
+            Cargando servicios...
+          </div>
+        ) : (
+          <div className="grid gap-6">
+            {services.length === 0 ? (
+              <div className="text-center text-gray-500">
+                No hay servicios disponibles.
+              </div>
+            ) : (
+              services.map((service) => (
+                <ServiceCard key={service.service_id} service={service} />
+              ))
+            )}
+          </div>
+        )}
       </section>
 
       <section>
-        <h3 className="text-lg font-semibold mb-2">Reseñas</h3>
+        <h3 className="text-lg font-semibold mb-2">
+          Reseñas {reviewCount !== null ? `(${reviewCount})` : ""}
+        </h3>
         {professionalReviews.length === 0 ? (
           <p className="text-gray-700 leading-relaxed">
             Aún no tienes reseñas.
@@ -222,6 +312,33 @@ const Profile = ({ tipo_usuario }) => {
           </div>
         )}
       </section>
+      {confirmVerify.open && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full">
+            <h3 className="text-lg font-bold text-[#1E3A8A]">
+              Solicitar verificación
+            </h3>
+            <p className="mt-2 text-gray-700">
+              ¿Confirmas que quieres solicitar la verificación de tu cuenta?
+            </p>
+            <div className="mt-4 flex justify-end gap-3">
+              <button
+                className="px-4 py-2 rounded-md bg-gray-200 cursor-pointer"
+                onClick={() => setConfirmVerify({ open: false })}
+              >
+                Cerrar
+              </button>
+              <button
+                className="px-4 py-2 rounded-md bg-[#1E3A8A] text-white cursor-pointer"
+                onClick={handleConfirmVerify}
+                disabled={(reviewCount ?? 0) < 5 || requestSent}
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

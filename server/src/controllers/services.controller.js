@@ -35,7 +35,7 @@ const getMyServices = async (req, res) => {
 const getServices = async (req, res) => {
   try {
     const response = await pool.query(`
-      SELECT s.*, p.profession_name, u.rut
+      SELECT s.*, p.profession_name, prof.verified AS professional_verified, u.rut, u.region, u.comuna, u.name AS professional_name
       FROM services s
       JOIN professionals prof ON s.professional_id = prof.professional_id
       JOIN professions p ON prof.profession_id = p.profession_id
@@ -54,7 +54,7 @@ const getServiceById = async (req, res) => {
     const service_id = req.params.service_id;
     const response = await pool.query(
       `SELECT s.service_id, s.title AS service_name, s.description, s.price, s.modality, s.duration, s.professional_id,
-              p.profession_name, u.name AS profesional_name
+              p.profession_name, prof.verified AS professional_verified, u.name AS profesional_name, u.rut AS profesional_rut, u.region, u.comuna
          FROM services s
          JOIN professionals prof ON s.professional_id = prof.professional_id
          JOIN professions p ON prof.profession_id = p.profession_id
@@ -86,10 +86,10 @@ const createService = async (req, res) => {
         .status(403)
         .json({ error: "Solo profesionales pueden crear servicios." });
     }
-
+    //status 'pending','approved','rejected
     const professional_id = profRes.rows[0].professional_id;
     const text =
-      "INSERT INTO services(title, description, price, modality, duration, professional_id) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *";
+      "INSERT INTO services(title, description, price, modality, duration, professional_id, status) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *";
     const values = [
       title,
       description,
@@ -97,6 +97,7 @@ const createService = async (req, res) => {
       modality,
       duration,
       professional_id,
+      "Pendiente",
     ];
     const response = await pool.query(text, values);
 
@@ -254,6 +255,87 @@ const changeToActivate = async (req, res) => {
   }
 };
 
+const approveService = async (req, res) => {
+  try {
+    const service_id = req.params.service_id;
+    const user_id = req.user; // admin
+
+    const svcRes = await pool.query(
+      "SELECT * FROM services WHERE service_id = $1",
+      [service_id]
+    );
+    if (svcRes.rows.length === 0) {
+      return res.status(404).json({ message: "Service not found" });
+    }
+
+    const text =
+      "UPDATE services SET status = $1, rejection_reason = NULL WHERE service_id = $2";
+    const values = ["Aprobado", service_id];
+    const result = await pool.query(text, values);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Service not found" });
+    }
+
+    await pool.query(
+      `INSERT INTO audit(user_id, affected_table, affected_record_id, action, description)
+       VALUES ($1,$2,$3,$4,$5)`,
+      [
+        user_id,
+        "SERVICES",
+        service_id,
+        "APPROVE",
+        "Servicio aprobado por administrador",
+      ]
+    );
+
+    res.json({ message: "Servicio aprobado" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al aprobar el servicio" });
+  }
+};
+
+const rejectService = async (req, res) => {
+  try {
+    const service_id = req.params.service_id;
+    const { reason } = req.body;
+    const user_id = req.user; //admin
+
+    const svcRes = await pool.query(
+      "SELECT * FROM services WHERE service_id = $1",
+      [service_id]
+    );
+    if (svcRes.rows.length === 0) {
+      return res.status(404).json({ message: "Service not found" });
+    }
+
+    const text =
+      "UPDATE services SET status = $1, rejection_reason = $2 WHERE service_id = $3";
+    const values = ["Rechazado", reason || null, service_id];
+    const result = await pool.query(text, values);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Service not found" });
+    }
+
+    await pool.query(
+      `INSERT INTO audit(user_id, affected_table, affected_record_id, action, description)
+       VALUES ($1,$2,$3,$4,$5)`,
+      [
+        user_id,
+        "SERVICES",
+        service_id,
+        "REJECT",
+        `Servicio rechazado. Motivo: ${reason || "Sin motivo especificado"}`,
+      ]
+    );
+
+    res.json({ message: "Servicio rechazado" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al rechazar el servicio" });
+  }
+};
+
 const editServiceByToken = async (req, res) => {
   const service_id = req.user;
   if (!service_id) {
@@ -289,5 +371,7 @@ module.exports = {
   getMyServices,
   changeToActivate,
   changeToDeactivate,
+  approveService,
+  rejectService,
   editServiceByToken,
 };

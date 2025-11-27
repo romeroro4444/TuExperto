@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import ServiceCard from "../common/ServiceCard";
+import { assets } from "../../assets/assets";
 
 const Servicios = () => {
   const [services, setServices] = useState([]);
@@ -9,8 +10,50 @@ const Servicios = () => {
   const [search, setSearch] = useState("");
   const [profession, setProfession] = useState("");
   const [specialization, setSpecialization] = useState("");
+  const [region, setRegion] = useState("");
+  const [comuna, setComuna] = useState("");
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(1000000);
+
+  const REGIONS = ["Región Metropolitana"];
+  const COMUNAS = [
+    "Cerrillos",
+    "Cerro Navia",
+    "Conchalí",
+    "El Bosque",
+    "Estación Central",
+    "Huechuraba",
+    "Independencia",
+    "La Cisterna",
+    "La Florida",
+    "La Granja",
+    "La Pintana",
+    "La Reina",
+    "Las Condes",
+    "Lo Barnechea",
+    "Lo Espejo",
+    "Lo Prado",
+    "Macul",
+    "Maipú",
+    "Ñuñoa",
+    "Padre Hurtado",
+    "Pedro Aguirre Cerda",
+    "Peñalolén",
+    "Pirque",
+    "Providencia",
+    "Pudahuel",
+    "Puente Alto",
+    "Quilicura",
+    "Quinta Normal",
+    "Recoleta",
+    "Renca",
+    "San Bernardo",
+    "San Joaquín",
+    "San José de Maipo",
+    "San Miguel",
+    "San Ramón",
+    "Santiago",
+  ];
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -43,11 +86,15 @@ const Servicios = () => {
         ? service.specialization_name === specialization
         : false
       : true;
+    const matchesRegion = region ? service.region === region : true;
+    const matchesComuna = comuna ? service.comuna === comuna : true;
     const matchesPrice = service.price >= minPrice && service.price <= maxPrice;
     return (
       matchesSearch &&
       matchesProfession &&
       matchesSpecialization &&
+      matchesRegion &&
+      matchesComuna &&
       matchesPrice
     );
   });
@@ -66,19 +113,26 @@ const Servicios = () => {
         {/* Filtros */}
         <aside className="md:w-1/4 bg-white rounded-xl shadow p-6 mb-8 md:mb-0">
           <h3 className="text-lg font-semibold text-[#1E3A8A] mb-4">Filtros</h3>
-          <input
-            type="text"
-            placeholder="Buscar servicios"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-[#FE7743]"
-          />
+          <div className="relative mb-4">
+            <img
+              src={assets.lookingfor}
+              alt="buscar"
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 opacity-70 pointer-events-none"
+            />
+            <input
+              type="text"
+              placeholder="Buscar servicios"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-[#FE7743]"
+            />
+          </div>
           <div className="mb-4">
             <label className="block text-sm font-semibold mb-1 text-[#1E3A8A]">
-              Profesión
+              Expertise
             </label>
             <select
               className="w-full border border-gray-300 rounded-lg px-3 py-2"
@@ -88,7 +142,7 @@ const Servicios = () => {
                 setCurrentPage(1);
               }}
             >
-              <option value="">Selecciona Profesión</option>
+              <option value="">Tipos de Expertos</option>
               {[
                 ...new Set(
                   services.map((s) => s.profession_name).filter(Boolean)
@@ -102,32 +156,65 @@ const Servicios = () => {
           </div>
           <div className="mb-4">
             <label className="block text-sm font-semibold mb-1 text-[#1E3A8A]">
-              Especialización
+              Región
             </label>
             <select
               className="w-full border border-gray-300 rounded-lg px-3 py-2"
-              value={specialization}
+              value={region}
               onChange={(e) => {
-                setSpecialization(e.target.value);
+                setRegion(e.target.value);
+                setComuna("");
                 setCurrentPage(1);
               }}
             >
-              <option value="">Selecciona Especialización</option>
-              {[
-                ...new Set(
-                  services.map((s) => s.specialization_name).filter(Boolean)
-                ),
-              ].map((spec, idx) => (
-                <option key={idx} value={spec}>
-                  {spec}
+              <option value="">Selecciona Región</option>
+              {REGIONS.map((r) => (
+                <option key={r} value={r}>
+                  {r}
                 </option>
               ))}
             </select>
           </div>
           <div className="mb-4">
             <label className="block text-sm font-semibold mb-1 text-[#1E3A8A]">
+              Comuna
+            </label>
+            <select
+              className="w-full border border-gray-300 rounded-lg px-3 py-2"
+              value={comuna}
+              onChange={(e) => {
+                setComuna(e.target.value);
+                setCurrentPage(1);
+              }}
+              disabled={!region}
+            >
+              <option value="">Selecciona Comuna</option>
+              {COMUNAS.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-semibold mb-1 text-[#1E3A8A]">
               Rango de Precio
             </label>
+            <div className="flex justify-between items-center mb-2 text-sm text-gray-700">
+              <div>
+                Min:{" "}
+                <span className="font-semibold">
+                  ${minPrice.toLocaleString()}
+                </span>
+              </div>
+              <div>
+                Max:{" "}
+                <span className="font-semibold">
+                  ${maxPrice.toLocaleString()}
+                </span>
+              </div>
+            </div>
             <input
               type="range"
               min="0"
@@ -151,12 +238,12 @@ const Servicios = () => {
               className="w-full mt-2"
             />
           </div>
-          <div>
+          {/*           <div>
             <label className="block text-sm font-semibold mb-1 text-[#1E3A8A]">
               Calificación mínima
             </label>
             <input type="range" min="1" max="5" className="w-full" />
-          </div>
+          </div> */}
         </aside>
 
         <section className="md:w-3/4">

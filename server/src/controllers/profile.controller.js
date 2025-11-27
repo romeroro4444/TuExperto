@@ -220,7 +220,7 @@ const getProfileByUserId = async (req, res) => {
 
     // datos del profesional
     const profRes = await pool.query(
-      `SELECT p.professional_id, p.description, p.verified, pr.profession_name
+      `SELECT p.professional_id, p.description, p.verified, p.review_count, pr.profession_name
        FROM professionals p
        JOIN professions pr ON p.profession_id = pr.profession_id
        WHERE p.user_id = $1`,
@@ -273,7 +273,7 @@ const getProfileByToken = async (req, res) => {
 
     // datos del profesional
     const profRes = await pool.query(
-      `SELECT p.professional_id, p.description, p.verified, pr.profession_name
+      `SELECT p.professional_id, p.description, p.verified, p.review_count, pr.profession_name
        FROM professionals p
        JOIN professions pr ON p.profession_id = pr.profession_id
        WHERE p.user_id = $1`,
@@ -305,10 +305,174 @@ const getProfileByToken = async (req, res) => {
   }
 };
 
+const verifyAccount = async (req, res) => {
+  try {
+    const user_id = req.user;
+    if (!user_id) return res.status(401).json({ message: "Unauthorized" });
+
+    const profRes = await pool.query(
+      `SELECT p.professional_id, u.email, u.name, u.lastname, u.rut
+       FROM professionals p JOIN users u ON p.user_id = u.user_id WHERE p.user_id = $1`,
+      [user_id]
+    );
+    if (profRes.rows.length === 0) {
+      return res.status(404).json({ message: "Profesional no encontrado" });
+    }
+    const prof = profRes.rows[0];
+
+    const serverUrl = process.env.SERVER_URL || "http://localhost:4000";
+    const acceptLink = `${serverUrl}/verify-decision?professional_id=${prof.professional_id}&decision=accept`;
+    const rejectLink = `${serverUrl}/verify-decision?professional_id=${prof.professional_id}&decision=reject`;
+
+    const {
+      sendDecisionAppointmentEmail,
+    } = require("../services/email.service");
+
+    const subject = `Solicitud de verificación: ${prof.name} ${prof.lastname}`;
+    const htmlContent = `
+      <p>Se ha solicitado la verificación de la cuenta del profesional <strong>${prof.name} ${prof.lastname}</strong>.</p>
+      <p>ID profesional: ${prof.professional_id}</p>
+      <p>Rut: ${prof.rut}</p>
+      
+      <p>Acciones:</p>
+      <ul>
+        <li><a href="${acceptLink}">Aceptar verificación</a></li>
+        <li><a href="${rejectLink}">Rechazar verificación</a></li>
+      </ul>
+    `;
+
+    await sendDecisionAppointmentEmail({
+      toEmail: "tuexperto.cl@gmail.com",
+      toName: "Administrador TuExperto",
+      subject,
+      htmlContent,
+    });
+
+    return res.json({ message: "Solicitud enviada al administrador" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error al solicitar verificación" });
+  }
+};
+
+const verificationDecision = async (req, res) => {
+  try {
+    const { professional_id, decision } = req.query;
+    if (!professional_id || !decision) {
+      return res.status(400).send("Missing parameters");
+    }
+
+    // get professional user info
+    const profRes = await pool.query(
+      "SELECT p.professional_id, p.user_id, u.email, u.name, u.lastname FROM professionals p JOIN users u ON p.user_id = u.user_id WHERE p.professional_id = $1",
+      [professional_id]
+    );
+    if (profRes.rows.length === 0) {
+      return res.status(404).send("Professional not found");
+    }
+    const prof = profRes.rows[0];
+
+    if (decision === "accept") {
+      await pool.query(
+        "UPDATE professionals SET verified = TRUE WHERE professional_id = $1",
+        [professional_id]
+      );
+
+      const subject = "Tu cuenta ha sido verificada";
+      const htmlContent = `<p>Hola ${prof.name},</p><p>Tu cuenta ha sido verificada por el administrador. Ahora aparecerás como profesional verificado en TuExperto.</p>`;
+      const {
+        sendDecisionAppointmentEmail,
+      } = require("../services/email.service");
+      await sendDecisionAppointmentEmail({
+        toEmail: prof.email,
+        toName: `${prof.name} ${prof.lastname}`,
+        subject,
+        htmlContent,
+      });
+
+      return res.send("<h2>Usuario verificado correctamente.</h2>");
+    }
+
+    if (decision === "reject") {
+      const subject = "Solicitud de verificación rechazada";
+      const htmlContent = `<p>Hola ${prof.name},</p><p>La solicitud de verificación de tu cuenta fue <strong>rechazada</strong> por el administrador.</p>`;
+      const {
+        sendDecisionAppointmentEmail,
+      } = require("../services/email.service");
+      await sendDecisionAppointmentEmail({
+        toEmail: prof.email,
+        toName: `${prof.name} ${prof.lastname}`,
+        subject,
+        htmlContent,
+      });
+      return res.send(
+        "<h2>Solicitud rechazada y correo enviado al profesional.</h2>"
+      );
+    }
+
+    return res.status(400).send("Decision no válida");
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Error procesando la decisión");
+  }
+};
+
+// obtiene perfil público por professional_id (sin auth)
+const getProfileByProfessionalId = async (req, res) => {
+  const professional_id = req.params.professional_id;
+  if (!professional_id)
+    return res.status(400).json({ message: "professional_id inválido" });
+  try {
+    const profRes = await pool.query(
+      `SELECT p.professional_id, p.description, p.verified, p.review_count, pr.profession_name, u.user_id, u.name, u.lastname, u.rut, u.telefono
+       FROM professionals p
+       JOIN professions pr ON p.profession_id = pr.profession_id
+       JOIN users u ON p.user_id = u.user_id
+       WHERE p.professional_id = $1`,
+      [professional_id]
+    );
+    if (profRes.rows.length === 0)
+      return res.status(404).json({ message: "Profesional no encontrado" });
+    const row = profRes.rows[0];
+
+    const specRes = await pool.query(
+      `SELECT s.specialization_id, s.specialization_name
+       FROM professionals_specialization ps
+       JOIN specializations s ON ps.specialization_id = s.specialization_id
+       WHERE ps.professional_id = $1`,
+      [professional_id]
+    );
+
+    res.json({
+      user: {
+        user_id: row.user_id,
+        name: row.name,
+        lastname: row.lastname,
+        rut: row.rut,
+        telefono: row.telefono,
+      },
+      professional: {
+        professional_id: row.professional_id,
+        description: row.description,
+        verified: row.verified,
+        review_count: row.review_count,
+        profession_name: row.profession_name,
+      },
+      specializations: specRes.rows,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error al obtener perfil" });
+  }
+};
+
 module.exports = {
   getProfileByToken,
   editProfileByToken,
   getClientProfileByToken,
   editClientProfileByToken,
   getUserTypeByToken,
+  verifyAccount,
+  verificationDecision,
+  getProfileByProfessionalId,
 };

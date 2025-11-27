@@ -56,8 +56,15 @@ const createRequest = async (req, res) => {
     const { profession_id, title, description, budget } = req.body;
     // insertar nueva solicitud de servicio
     const text =
-      "INSERT INTO services_requests(user_id, profession_id, title, description, budget) VALUES ($1,$2,$3,$4,$5) RETURNING *";
-    const values = [user_id, profession_id, title, description, budget];
+      "INSERT INTO services_requests(user_id, profession_id, title, description, budget, status) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *";
+    const values = [
+      user_id,
+      profession_id,
+      title,
+      description,
+      budget,
+      "Pendiente",
+    ];
     const response = await pool.query(text, values);
     // auditoría
     if (user_id) {
@@ -241,8 +248,15 @@ const createRequestWithUserId = async (req, res) => {
       return res.status(400).json({ error: "Faltan campos requeridos" });
     }
     const text =
-      "INSERT INTO services_requests(user_id, profession_id, title, description, budget) VALUES ($1,$2,$3,$4,$5) RETURNING *";
-    const values = [user_id, profession_id, title, description, budget];
+      "INSERT INTO services_requests(user_id, profession_id, title, description, budget, status) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *";
+    const values = [
+      user_id,
+      profession_id,
+      title,
+      description,
+      budget,
+      "Pendiente",
+    ];
     const response = await pool.query(text, values);
     res.json({
       message: "Solicitud creada exitosamente (con user_id)",
@@ -254,6 +268,76 @@ const createRequestWithUserId = async (req, res) => {
   }
 };
 
+// Admin actions: approve / reject request
+const approveRequest = async (req, res) => {
+  try {
+    const request_id = req.params.request_id;
+    const user_id = req.user; // admin
+
+    const reqRes = await pool.query(
+      "SELECT * FROM services_requests WHERE request_id = $1",
+      [request_id]
+    );
+    if (reqRes.rows.length === 0)
+      return res.status(404).json({ message: "Request not found" });
+
+    const text =
+      "UPDATE services_requests SET status = $1, rejection_reason = NULL WHERE request_id = $2";
+    await pool.query(text, ["Aprobado", request_id]);
+
+    await pool.query(
+      `INSERT INTO audit(user_id, affected_table, affected_record_id, action, description) VALUES ($1,$2,$3,$4,$5)`,
+      [
+        user_id,
+        "SERVICES_REQUESTS",
+        request_id,
+        "APPROVE",
+        "Solicitud aprobada por administrador",
+      ]
+    );
+
+    res.json({ message: "Solicitud aprobada" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al aprobar la solicitud" });
+  }
+};
+
+const rejectRequest = async (req, res) => {
+  try {
+    const request_id = req.params.request_id;
+    const { reason } = req.body;
+    const user_id = req.user; // admin
+
+    const reqRes = await pool.query(
+      "SELECT * FROM services_requests WHERE request_id = $1",
+      [request_id]
+    );
+    if (reqRes.rows.length === 0)
+      return res.status(404).json({ message: "Request not found" });
+
+    const text =
+      "UPDATE services_requests SET status = $1, rejection_reason = $2 WHERE request_id = $3";
+    await pool.query(text, ["Rechazado", reason || null, request_id]);
+
+    await pool.query(
+      `INSERT INTO audit(user_id, affected_table, affected_record_id, action, description) VALUES ($1,$2,$3,$4,$5)`,
+      [
+        user_id,
+        "SERVICES_REQUESTS",
+        request_id,
+        "REJECT",
+        `Solicitud rechazada. Motivo: ${reason || "Sin motivo especificado"}`,
+      ]
+    );
+
+    res.json({ message: "Solicitud rechazada" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al rechazar la solicitud" });
+  }
+};
+
 module.exports = {
   getMyRequests,
   getRequests,
@@ -262,6 +346,8 @@ module.exports = {
   createRequestWithUserId,
   deleteRequestById,
   editRequestById,
+  approveRequest,
+  rejectRequest,
   editRequestByToken,
   changeToActivateRequest,
   changeToDeactivateRequest,

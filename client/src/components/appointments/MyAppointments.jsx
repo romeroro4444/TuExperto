@@ -4,10 +4,20 @@ import toast, { Toaster } from "react-hot-toast";
 const MyAppointments = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [balance, setBalance] = useState(null);
   const [confirm, setConfirm] = useState({
     open: false,
     type: null,
     appt: null,
+  });
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [withdrawForm, setWithdrawForm] = useState({
+    amount: "",
+    bank: "",
+    account_number: "",
+    rut: "",
+    beneficiary_name: "",
+    note: "",
   });
 
   const handleDecision = async (appointment_id, decision) => {
@@ -39,24 +49,68 @@ const MyAppointments = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchMyAppointments = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:4000/my-appointments", {
-          method: "GET",
-          headers: { token },
-        });
-        const data = await res.json();
-        setAppointments(Array.isArray(data) ? data : []);
-      } catch (error) {
-        setAppointments([]);
-      } finally {
-        setLoading(false);
+  const fetchMyAppointments = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:4000/my-appointments", {
+        method: "GET",
+        headers: { token },
+      });
+      const data = await res.json();
+      const rows = Array.isArray(data) ? data : [];
+      setAppointments(rows);
+      if (rows.length > 0) {
+        const b = rows[0].balance ?? rows[0].professional_balance ?? null;
+        setBalance(b);
+      } else {
+        setBalance(null);
       }
-    };
+    } catch (error) {
+      setAppointments([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchMyAppointments();
   }, []);
+
+  const openWithdrawModal = () => setShowWithdrawModal(true);
+  const closeWithdrawModal = () => setShowWithdrawModal(false);
+
+  const handleWithdrawChange = (e) => {
+    const { name, value } = e.target;
+    setWithdrawForm((s) => ({ ...s, [name]: value }));
+  };
+
+  const submitWithdraw = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      // basic validation
+      if (!withdrawForm.amount || Number(withdrawForm.amount) <= 0) {
+        toast.error("Ingrese un monto válido");
+        return;
+      }
+      const res = await fetch("http://localhost:4000/withdrawal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", token },
+        body: JSON.stringify(withdrawForm),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message || "Solicitud enviada");
+        closeWithdrawModal();
+        // actualiza las citas
+        fetchMyAppointments();
+      } else {
+        toast.error(data.error || "Error al enviar solicitud");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error al enviar solicitud");
+    }
+  };
 
   return (
     <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-lg p-4 sm:p-8 lg:p-12 mt-10">
@@ -65,10 +119,48 @@ const MyAppointments = () => {
         <h2 className="text-2xl sm:text-3xl font-bold text-[#1E3A8A]">
           Gestionar Citas
         </h2>
+        <div className="flex flex-col sm:flex-row ">
+          <span className="relative group inline-flex items-center">
+            <span
+              className="w-6 h-6 text-xs rounded-full bg-gray-200 text-gray-700 flex items-center justify-center cursor-pointer"
+              tabIndex={0}
+              aria-describedby="saldo-help"
+              aria-label="Ayuda sobre saldo"
+            >
+              ?
+            </span>
+            <div
+              id="saldo-help"
+              role="tooltip"
+              className="pointer-events-none absolute left-0 -bottom-10 w-64 transform -translate-x-1/2 opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 group-focus-within:opacity-100 transition-all bg-white text-gray-800 text-sm p-2 rounded-lg shadow-lg z-50"
+            >
+              La transferencia de dinero puede demorar entre 3 y 7 días hábiles.
+              Ten en cuenta que el monto recibido podría ser inferior al
+              indicado, debido a retenciones por intereses o impuestos.
+            </div>
+          </span>
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#1E3A8A]">
+            Saldo {balance != null ? `$${balance}` : "$0"}
+          </h2>
+        </div>
       </div>
-      <h3 className="text-lg sm:text-xl font-semibold text-[#1E3A8A] mb-3">
-        Citas agendadas
-      </h3>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <h3 className="text-lg sm:text-xl font-semibold text-[#1E3A8A] mb-3">
+          Citas agendadas
+        </h3>
+        <button
+          className={`px-4 py-2 rounded-md font-semibold ${
+            balance > 0
+              ? "bg-green-500 text-white hover:bg-green-600 cursor-pointer"
+              : "bg-gray-300 text-gray-600 cursor-not-allowed"
+          }`}
+          onClick={openWithdrawModal}
+          disabled={!(balance > 0)}
+          title={balance > 0 ? "Retirar fondos" : "Saldo insuficiente"}
+        >
+          Retirar Fondos
+        </button>
+      </div>
 
       {loading ? (
         <p className="text-[#1E3A8A]">Cargando citas...</p>
@@ -205,6 +297,110 @@ const MyAppointments = () => {
                 }}
               >
                 Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showWithdrawModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-lg w-full">
+            <h3 className="text-lg font-bold text-[#1E3A8A]">Retirar Fondos</h3>
+            <p className="mt-2 text-gray-700">
+              Completa los datos para solicitar el retiro.
+            </p>
+
+            <div className="mt-4 grid grid-cols-1 gap-3">
+              <label className="text-sm text-gray-600">Monto</label>
+              <input
+                name="amount"
+                value={withdrawForm.amount}
+                onChange={handleWithdrawChange}
+                className="border rounded px-3 py-2"
+                placeholder="Ej: 50000"
+                type="number"
+                min="0"
+              />
+              {balance != null &&
+                Number(withdrawForm.amount) > Number(balance) && (
+                  <div className="text-sm text-red-600">
+                    El monto supera tu saldo disponible.
+                  </div>
+                )}
+
+              <label className="text-sm text-gray-600">Banco</label>
+              <input
+                name="bank"
+                value={withdrawForm.bank}
+                onChange={handleWithdrawChange}
+                className="border rounded px-3 py-2"
+                placeholder="Nombre del banco"
+              />
+
+              <label className="text-sm text-gray-600">Número de cuenta</label>
+              <input
+                name="account_number"
+                value={withdrawForm.account_number}
+                onChange={handleWithdrawChange}
+                className="border rounded px-3 py-2"
+                placeholder="12345678"
+              />
+
+              <label className="text-sm text-gray-600">RUT / ID</label>
+              <input
+                name="rut"
+                value={withdrawForm.rut}
+                onChange={handleWithdrawChange}
+                className="border rounded px-3 py-2"
+                placeholder="12.345.678-9"
+              />
+
+              <label className="text-sm text-gray-600">Beneficiario</label>
+              <input
+                name="beneficiary_name"
+                value={withdrawForm.beneficiary_name}
+                onChange={handleWithdrawChange}
+                className="border rounded px-3 py-2"
+                placeholder="Nombre del beneficiario"
+              />
+
+              <label className="text-sm text-gray-600">Nota (opcional)</label>
+              <textarea
+                name="note"
+                value={withdrawForm.note}
+                onChange={handleWithdrawChange}
+                className="border rounded px-3 py-2"
+                placeholder="Instrucciones o referencia"
+                rows={3}
+              />
+            </div>
+
+            <div className="mt-4 flex justify-end gap-3">
+              <button
+                className="px-4 py-2 rounded-md bg-gray-200"
+                onClick={() => {
+                  closeWithdrawModal();
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                className={`px-4 py-2 rounded-md text-white ${
+                  Number(withdrawForm.amount) > 0 &&
+                  Number(balance || 0) >= Number(withdrawForm.amount)
+                    ? "bg-blue-600 hover:bg-blue-700"
+                    : "bg-gray-300 text-gray-600 cursor-not-allowed"
+                }`}
+                onClick={submitWithdraw}
+                disabled={
+                  !(
+                    Number(withdrawForm.amount) > 0 &&
+                    Number(balance || 0) >= Number(withdrawForm.amount)
+                  )
+                }
+              >
+                Enviar solicitud
               </button>
             </div>
           </div>

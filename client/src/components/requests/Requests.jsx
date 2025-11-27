@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import RequestCard from "./../common/RequestCard";
+import { assets } from "../../assets/assets";
 
 const Servicios = () => {
   const [requests, setRequests] = useState([]);
@@ -11,6 +12,8 @@ const Servicios = () => {
   const [specialization, setSpecialization] = useState("");
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(1000000);
+  const PRICE_MIN = 0;
+  const PRICE_MAX = 1000000;
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -34,6 +37,9 @@ const Servicios = () => {
     const matchesSearch =
       request.title.toLowerCase().includes(search.toLowerCase()) ||
       request.description.toLowerCase().includes(search.toLowerCase());
+    // hide pending or rejected requests from public listing
+    const status = request.status || request.estado || "";
+    const isVisible = !/pend|rech/i.test(status);
     const matchesProfession = profession
       ? request.profession_name === profession
       : true;
@@ -48,7 +54,8 @@ const Servicios = () => {
       matchesSearch &&
       matchesProfession &&
       matchesSpecialization &&
-      matchesPrice
+      matchesPrice &&
+      isVisible
     );
   });
   const currentrequests = filteredrequests.slice(
@@ -66,16 +73,24 @@ const Servicios = () => {
         {/* Filtros */}
         <aside className="md:w-1/4 bg-white rounded-xl shadow p-6 mb-8 md:mb-0">
           <h3 className="text-lg font-semibold text-[#1E3A8A] mb-4">Filtros</h3>
-          <input
-            type="text"
-            placeholder="Buscar solicitud"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-[#FE7743]"
-          />
+          <div className="relative mb-4">
+            <img
+              src={assets.lookingfor}
+              alt="buscar"
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 opacity-70 pointer-events-none"
+            />
+            <input
+              type="text"
+              placeholder="Buscar solicitud"
+              maxLength={100}
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value.slice(0, 100));
+                setCurrentPage(1);
+              }}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-[#FE7743]"
+            />
+          </div>
           <div className="mb-4">
             <label className="block text-sm font-semibold mb-1 text-[#1E3A8A]">
               Profesión
@@ -104,24 +119,35 @@ const Servicios = () => {
             <label className="block text-sm font-semibold mb-1 text-[#1E3A8A]">
               Rango de Precio
             </label>
+            <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+              <span>Min: ${minPrice.toLocaleString()}</span>
+              <span>Max: ${maxPrice.toLocaleString()}</span>
+            </div>
+
             <input
               type="range"
-              min="0"
-              max="100000"
+              min={PRICE_MIN}
+              max={PRICE_MAX}
               value={minPrice}
               onChange={(e) => {
-                setMinPrice(Number(e.target.value));
+                const value = Number(e.target.value);
+                // Prevent min exceeding current max
+                const newMin = Math.min(value, maxPrice);
+                setMinPrice(newMin);
                 setCurrentPage(1);
               }}
               className="w-full"
             />
+
             <input
               type="range"
-              min="0"
-              max="100000"
+              min={PRICE_MIN}
+              max={PRICE_MAX}
               value={maxPrice}
               onChange={(e) => {
-                setMaxPrice(Number(e.target.value));
+                const value = Number(e.target.value);
+                const newMax = Math.max(value, minPrice);
+                setMaxPrice(newMax);
                 setCurrentPage(1);
               }}
               className="w-full mt-2"

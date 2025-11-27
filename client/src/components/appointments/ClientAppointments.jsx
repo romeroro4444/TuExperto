@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
-import Pay from "./Pay";
+import PayPalPay from "./PayPalPay";
 
 const StarRating = ({ rating, setRating }) => (
   <div className="flex gap-1">
@@ -93,7 +93,7 @@ const ClientAppointments = () => {
   const handlePay = async (appointment_id) => {
     setPayLoading(true);
     let finished = false;
-    // Timeout de seguridad: 10 segundos
+    // Timeout
     const timeout = setTimeout(() => {
       if (!finished) {
         setPayLoading(false);
@@ -133,22 +133,24 @@ const ClientAppointments = () => {
     }
   };
 
+  // refrescar las citas
+  const fetchMyAppointments = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:4000/my-appointments", {
+        method: "GET",
+        headers: { token },
+      });
+      const data = await res.json();
+      setAppointments(Array.isArray(data) ? data : []);
+    } catch (error) {
+      setAppointments([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchMyAppointments = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:4000/my-appointments", {
-          method: "GET",
-          headers: { token },
-        });
-        const data = await res.json();
-        setAppointments(Array.isArray(data) ? data : []);
-      } catch (error) {
-        setAppointments([]);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchMyAppointments();
   }, []);
 
@@ -293,7 +295,8 @@ const ClientAppointments = () => {
                             onClick={() => handlePay(appt.appointment_id)}
                           >
                             Pagado
-                          </button>
+                          </button>{" "}
+                          *
                         </div>
                       </>
                     )}
@@ -445,10 +448,23 @@ const ClientAppointments = () => {
       {payConfirm.open && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg max-w-md w-full">
-            <Pay
-              title={payConfirm.appt.title}
-              price={payConfirm.appt.price}
-              onClose={() => setPayConfirm({ open: false, appt: null })}
+            <div className="mb-4">
+              <h3 className="text-lg font-bold text-[#1E3A8A]">Pagar cita</h3>
+              <p className="text-sm text-gray-600">
+                Servicio: {payConfirm.appt.title} · Monto: $
+                {payConfirm.appt.price}
+              </p>
+            </div>
+            <PayPalPay
+              appointmentId={payConfirm.appt.appointment_id}
+              amount={payConfirm.appt.price}
+              onSuccess={async () => {
+                // close modal, refresh appointments and notify user
+                setPayConfirm({ open: false, appt: null });
+                await fetchMyAppointments();
+                toast.success("Pago realizado y cita actualizada a PAGADA");
+              }}
+              onCancel={() => setPayConfirm({ open: false, appt: null })}
             />
           </div>
         </div>

@@ -17,6 +17,8 @@ const Appointment = () => {
 
   // Estado para los datos del servicio
   const [serviceDetails, setServiceDetails] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [showFullDescription, setShowFullDescription] = useState(false);
 
   // Obtener user_id del token
   const token = localStorage.getItem("token");
@@ -65,6 +67,27 @@ const Appointment = () => {
     if (service_id) fetchServiceDetails();
   }, [service_id]);
 
+  // fetch reviews for this service using the new endpoint
+  useEffect(() => {
+    if (!service_id) return;
+    const fetchServiceReviews = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:4000/service/${service_id}/reviews`
+        );
+        if (!res.ok) {
+          setReviews([]);
+          return;
+        }
+        const data = await res.json();
+        setReviews(Array.isArray(data) ? data : []);
+      } catch (err) {
+        setReviews([]);
+      }
+    };
+    fetchServiceReviews();
+  }, [service_id]);
+
   return (
     <div className="w-full px-4 md:px-8 lg:px-24 xl:px-48 py-4">
       <Toaster position="top-right" />
@@ -79,9 +102,28 @@ const Appointment = () => {
               <p>
                 <strong>Servicio:</strong> {serviceDetails.service_name}
               </p>
-              <p>
-                <strong>Descripción:</strong> {serviceDetails.description}
-              </p>
+              <div>
+                <strong>Descripción:</strong>
+                <div className="mt-1 text-gray-700 break-words max-w-full whitespace-pre-line">
+                  {serviceDetails.description &&
+                  serviceDetails.description.length > 300 ? (
+                    <>
+                      {showFullDescription
+                        ? serviceDetails.description
+                        : `${serviceDetails.description.slice(0, 300)}...`}
+                      <button
+                        type="button"
+                        onClick={() => setShowFullDescription((s) => !s)}
+                        className="ml-2 text-sm text-[#FE7743] font-medium hover:underline"
+                      >
+                        {showFullDescription ? "Mostrar menos" : "Mostrar más"}
+                      </button>
+                    </>
+                  ) : (
+                    serviceDetails.description || ""
+                  )}
+                </div>
+              </div>
               <p>
                 <strong>Precio:</strong> ${serviceDetails.price}
               </p>
@@ -353,6 +395,41 @@ const Appointment = () => {
         >
           Agendar Cita
         </button>
+      </div>
+      {/* reseñas del servicio */}
+      <div className="mt-6 w-full max-w-2xl mx-auto">
+        <h3 className="text-lg font-semibold mb-3">Reseñas de este servicio</h3>
+        {reviews.length === 0 ? (
+          <div className="p-4 bg-white rounded-xl shadow">
+            No hay reseñas todavía.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {reviews.map((r) => (
+              <div key={r.review_id} className="bg-gray-50 p-4 rounded shadow">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-yellow-400 text-lg">
+                    {Array(r.rating).fill("★").join("")}
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {r.review_date
+                      ? new Date(r.review_date).toLocaleDateString()
+                      : ""}
+                  </div>
+                </div>
+                <div className="text-gray-700">
+                  {r.comment || "Sin comentario"}
+                </div>
+                <div className="text-xs text-gray-500 mt-2">
+                  Cliente:{" "}
+                  {r.client_name
+                    ? `${r.client_name || ""} ${r.client_lastname || ""}`
+                    : r.client_rut || r.client_id || "Anon"}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -21,6 +21,8 @@ app.use(require("./routes/appointments.routes"));
 app.use(require("./routes/payment.routes"));
 app.use(require("./routes/reviews.routes"));
 app.use(require("./routes/complaint.routes"));
+app.use(require("./routes/paypal.routes"));
+app.use(require("./routes/withdrawals.routes"));
 
 app.listen(PORT);
 console.log("Server on port", PORT);

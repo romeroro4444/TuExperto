@@ -4,9 +4,15 @@ const createReview = async (req, res) => {
   try {
     const { appointment_id, comment, rating } = req.body;
     const text =
-      "INSERT INTO reviews(appointment_id, comment, rating, done) VALUES($1,$2,$3,$4)";
+      "INSERT INTO reviews(appointment_id, comment, rating, done) VALUES($1,$2,$3,$4) RETURNING *";
     const values = [appointment_id, comment, rating, true];
     const response = await pool.query(text, values);
+    await pool.query(
+      `UPDATE professionals SET review_count = COALESCE(review_count,0) + 1 WHERE professional_id = (
+         SELECT s.professional_id FROM appointments a JOIN services s ON a.service_id = s.service_id WHERE a.appointment_id = $1
+       )`, //aumentar el número de reseñas que tiene el profesional
+      [appointment_id]
+    );
     res.json({
       message: "la reseña fue correctamente insertada",
       body: response.rows[0],
@@ -64,6 +70,30 @@ const getReviews = async (req, res) => {
   }
 };
 
+const getReviewsByService = async (req, res) => {
+  try {
+    const service_id = req.params.service_id;
+    if (!service_id)
+      return res.status(400).json({ error: "service_id requerido" });
+    const query = `
+      SELECT r.review_id, r.appointment_id, r.comment, r.rating, r.review_date,
+             cu.user_id as client_id, cu.name as client_name, cu.lastname as client_lastname, cu.rut as client_rut,
+             s.service_id, s.title as service_title
+      FROM reviews r
+      JOIN appointments a ON r.appointment_id = a.appointment_id
+      JOIN services s ON a.service_id = s.service_id
+      LEFT JOIN users cu ON a.user_id = cu.user_id
+      WHERE s.service_id = $1
+      ORDER BY r.review_date DESC
+    `;
+    const response = await pool.query(query, [service_id]);
+    res.json(response.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al obtener reseñas del servicio" });
+  }
+};
+
 const clientReview = async (req, res) => {
   try {
     const user_id = req.user;
@@ -94,5 +124,6 @@ module.exports = {
   createReview,
   getMyReviews,
   getReviews,
+  getReviewsByService,
   clientReview,
 };

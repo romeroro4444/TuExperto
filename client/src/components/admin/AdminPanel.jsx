@@ -11,7 +11,7 @@ import NoitificationsData from "./NotificationsData";
 import ReviewsData from "./ReviewsData";
 
 const AdminPanel = () => {
-  const [active, setActive] = useState("setting"); // default active tab
+  const [active, setActive] = useState("dashboard"); // default active tab
 
   const tabClass = (key) =>
     `flex items-center text-lg py-5 px-6 cursor-pointer transition-all ${
@@ -124,7 +124,7 @@ const AdminPanel = () => {
         <li
           id="complaintsTab"
           onClick={() => setActive("complaints")}
-          className={tabClass("complaintss")}
+          className={tabClass("complaints")}
         >
           <img
             src={assets.complaintIcon}

@@ -4,16 +4,19 @@ import { assets } from "./../../assets/assets";
 const FeaturedServices = () => {
   const servicios = [
     {
-      titulo: "Oficio 1",
-      descripcion: "Lorem ipsum, dolor sit amet consectetur adipisicing elit.",
+      titulo: "Servicios de Pintor",
+      descripcion:
+        "Expertos especializados en pintura interior y exterior, con acabados prolijos y asesoría en colores y materiales.",
     },
     {
-      titulo: "Oficio 2",
-      descripcion: "Lorem ipsum, dolor sit amet consectetur adipisicing elit.",
+      titulo: "Servicios de Mecánico",
+      descripcion:
+        "Mecánicos para diagnóstico, mantenciones y reparaciones de vehículos con atención rápida y confiable.",
     },
     {
-      titulo: "Oficio 3",
-      descripcion: "Lorem ipsum, dolor sit amet consectetur adipisicing elit.",
+      titulo: "Sevicios de Gásfiter",
+      descripcion:
+        "Expertos en gasfitería para reparaciones, instalaciones y detección de fugas, garantizando seguridad y funcionamiento óptimo.",
     },
   ];
 
@@ -26,10 +29,10 @@ const FeaturedServices = () => {
         </span>
       </h1>
       <p className="text-gray-600 max-w-2xl text-center mb-8">
-        Lorem ipsum dolor, sit amet consectetur adipisicing elit. Fuga, eaque
-        fugiat quia, possimus neque dolor error dolorum doloribus quasi
-        inventore asperiores at officiis repellat qui atque nam consectetur eum
-        odio.
+        Encuentra profesionales cercanos y calificados para cualquier trabajo
+        del hogar. Compara opciones, revisa reseñas reales y agenda con
+        confianza. Todo en una sola plataforma diseñada para simplificar tu día
+        a día.
       </p>
       <div className="flex flex-col sm:flex-row gap-6 w-full justify-center items-center">
         {servicios.map((servicio, idx) => (

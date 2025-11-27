@@ -139,7 +139,8 @@ const getMyAppointments = async (req, res) => {
         a.appointment_id, a.service_id, a.user_id AS client_id, a.reservation_date, a.status, 
         s.title, s.description, s.price, s.modality, s.duration, 
         u.name AS client_name, u.lastname AS client_lastname, u.email AS client_email, u.telefono AS client_telefono, 
-        p.profession_name
+        p.profession_name,
+        prof.balance
         FROM appointments a
         LEFT JOIN services s ON a.service_id = s.service_id
         LEFT JOIN professionals prof ON s.professional_id = prof.professional_id
@@ -157,6 +158,7 @@ const getMyAppointments = async (req, res) => {
       s.title, s.description, s.price, s.modality, s.duration, 
       prof.professional_id AS professional_id, 
       pu.name AS professional_name, pu.lastname AS professional_lastname, pu.email AS professional_email, pu.telefono AS professional_telefono, 
+      prof.balance AS professional_balance, 
       p.profession_name
       FROM appointments a
       LEFT JOIN services s ON a.service_id = s.service_id
@@ -197,7 +199,7 @@ const cancelAppointment = async (req, res) => {
         VALUES ($1,$2,$3,$4,$5)`,
       [
         appointment.user_id,
-        "appointments",
+        "APPOINTMENTS",
         appointment_id,
         "UPDATE",
         `Cancelación de cita para servicio ${appointment.service_id} en fecha ${appointment.reservation_date}`,
@@ -294,7 +296,7 @@ const decisionAppointment = async (req, res) => {
         VALUES ($1,$2,$3,$4,$5)`,
       [
         appointment.user_id,
-        "appointments",
+        "APPOINTMENTS",
         appointment_id,
         "UPDATE",
         `Decisión de cita (${status}) para servicio ${appointment.service_id} en fecha ${appointment.reservation_date}`,
@@ -417,7 +419,7 @@ const payAppointment = async (req, res) => {
         VALUES ($1,$2,$3,$4,$5)`,
       [
         appointment.user_id,
-        "appointments",
+        "APPOINTMENTS",
         appointment_id,
         "UPDATE",
         `Decisión de cita PAGADA para servicio ${appointment.service_id} en fecha ${appointment.reservation_date}`,
@@ -488,6 +490,23 @@ const payAppointment = async (req, res) => {
     ];
 
     await pool.query(notiQuery, notiValues);
+
+    // sumar precio del servicio al balance del profesional (CLP)
+    const priceRes = await pool.query(
+      `SELECT s.price, prof.professional_id
+       FROM services s
+       JOIN professionals prof ON s.professional_id = prof.professional_id
+       WHERE s.service_id = $1`,
+      [appointment.service_id]
+    );
+    const serviceInfo = priceRes.rows[0];
+    if (serviceInfo && serviceInfo.professional_id) {
+      await pool.query(
+        `UPDATE professionals SET balance = COALESCE(balance,0) + $1 WHERE professional_id = $2`,
+        [serviceInfo.price, serviceInfo.professional_id]
+      );
+    }
+
     res.json({ message: "Cita pagada correctamente" });
   } catch (error) {
     console.error(error);

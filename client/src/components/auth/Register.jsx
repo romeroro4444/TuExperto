@@ -13,6 +13,8 @@ const Register = ({ setAuth }) => {
     telefono: "",
     email: "",
     password: "",
+    region: "",
+    comuna: "",
   });
 
   const [professions, setProfessions] = useState([]);
@@ -23,6 +25,45 @@ const Register = ({ setAuth }) => {
   });
   const [specializations, setSpecializations] = useState([]);
   const [specializationInput, setSpecializationInput] = useState("");
+  // Comunas de la Región Metropolitana
+  const COMUNAS = [
+    "Cerrillos",
+    "Cerro Navia",
+    "Conchalí",
+    "El Bosque",
+    "Estación Central",
+    "Huechuraba",
+    "Independencia",
+    "La Cisterna",
+    "La Florida",
+    "La Granja",
+    "La Pintana",
+    "La Reina",
+    "Las Condes",
+    "Lo Barnechea",
+    "Lo Espejo",
+    "Lo Prado",
+    "Macul",
+    "Maipú",
+    "Ñuñoa",
+    "Padre Hurtado",
+    "Pedro Aguirre Cerda",
+    "Peñalolén",
+    "Pirque",
+    "Providencia",
+    "Pudahuel",
+    "Puente Alto",
+    "Quilicura",
+    "Quinta Normal",
+    "Recoleta",
+    "Renca",
+    "San Bernardo",
+    "San Joaquín",
+    "San José de Maipo",
+    "San Miguel",
+    "San Ramón",
+    "Santiago",
+  ];
   //cargar todas las profesiones
   const loadProfessions = async () => {
     const response = await fetch("http://localhost:4000/professions");
@@ -180,6 +221,33 @@ const Register = ({ setAuth }) => {
                   onChange={handleChange}
                   className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#FE7743] w-1/2"
                 />
+              </div>
+              <div className="flex gap-4 w-full">
+                <select
+                  name="region"
+                  value={user.region}
+                  onChange={handleChange}
+                  className="bg-white border border-[#1E3A8A] text-[#1E3A8A] text-sm rounded-lg focus:ring-[#FE7743] focus:border-[#FE7743] block w-1/2 p-2.5"
+                >
+                  <option value="">Elige una Región</option>
+                  <option value="Región Metropolitana">
+                    Región Metropolitana
+                  </option>
+                </select>
+
+                <select
+                  name="comuna"
+                  value={user.comuna}
+                  onChange={handleChange}
+                  className="bg-white border border-[#1E3A8A] text-[#1E3A8A] text-sm rounded-lg focus:ring-[#FE7743] focus:border-[#FE7743] block w-1/2 p-2.5"
+                >
+                  <option value="">Elige una Comuna</option>
+                  {COMUNAS.map((c) => (
+                    <option key={c} value={c} className="text-[#1E3A8A]">
+                      {c}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="flex flex-col gap-2">
                 <input

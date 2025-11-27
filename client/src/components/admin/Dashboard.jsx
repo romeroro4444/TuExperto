@@ -34,6 +34,13 @@ const Dashboard = () => {
     );
   });
 
+  const truncateWords = (text = "", numWords = 25) => {
+    const str = String(text || "");
+    const words = str.split(/\s+/).filter(Boolean);
+    if (words.length <= numWords) return str;
+    return words.slice(0, numWords).join(" ") + "...";
+  };
+
   return (
     <div className="w-full">
       {loading && <p className="text-sm text-gray-600">Cargando logs...</p>}
@@ -98,7 +105,12 @@ const Dashboard = () => {
                   </td>
                   <td className="px-6 py-4 text-base">{l.action}</td>
                   <td className="px-6 py-4 text-base">
-                    {l.description || "-"}
+                    <span
+                      title={l.description || "-"}
+                      className="block max-w-[48ch] break-words"
+                    >
+                      {l.description ? truncateWords(l.description, 25) : "-"}
+                    </span>
                   </td>
                   <td className="px-6 py-4 text-base">
                     {l.event_date

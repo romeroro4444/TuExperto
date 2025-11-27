@@ -19,6 +19,9 @@ const {
   getClientProfileByToken,
   editClientProfileByToken,
   getUserTypeByToken,
+  verifyAccount,
+  verificationDecision,
+  getProfileByProfessionalId,
 } = require("../controllers/profile.controller");
 
 const validinfo = require("./../middleware/validinfo");
@@ -40,6 +43,11 @@ router.get("/profile-client", authorization, getClientProfileByToken);
 router.put("/profile-client", authorization, editClientProfileByToken);
 router.put("/profile", authorization, editProfileByToken);
 router.get("/user-type", authorization, getUserTypeByToken);
+router.post("/verify-request", authorization, verifyAccount);
+router.get("/verify-decision", verificationDecision);
+
+// perfil público por professional_id
+router.get("/professional/:professional_id", getProfileByProfessionalId);
 
 //auditorio
 router.get("/audit", getAudit);

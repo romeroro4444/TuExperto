@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { assets } from "./../../assets/assets";
 
 const ServiceCard = ({ service }) => {
   const isLoggedIn = Boolean(localStorage.getItem("token"));
@@ -42,17 +43,43 @@ const ServiceCard = ({ service }) => {
       </div>
       <div className="flex flex-col items-center w-32">
         <div className="h-32 w-32 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-          <img
-            src={service.image_url || "https://placehold.co/100x100"}
-            alt={service.title}
-            className="object-cover w-full h-full"
-          />
+          <Link
+            to={`/professional/${service.professional_id}`}
+            className="block w-full h-full"
+          >
+            <img
+              src={service.image_url || assets.userIcon}
+              alt={service.title || "Servicio"}
+              className="object-cover w-full h-full cursor-pointer"
+            />
+          </Link>
         </div>
         {service.profession_name && (
           <div className="w-full text-center mt-2">
-            <span className="text-xs text-[#1E3A8A] font-semibold bg-gray-100 rounded px-2 py-1">
-              {service.profession_name}
-            </span>
+            <div className="flex flex-col items-center">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-[#1E3A8A] font-semibold bg-gray-100 rounded px-2 py-1">
+                  {service.profession_name}
+                </span>
+                {service.professional_verified && (
+                  <img
+                    src={assets.verifyIcon}
+                    alt="Verificado"
+                    className="w-6 h-6"
+                  />
+                )}
+              </div>
+              {(service.region || service.comuna) && (
+                <span className="text-xs text-gray-600 mt-1">
+                  {service.comuna ? `${service.comuna}` : ""}
+                  {service.region && service.comuna
+                    ? ` · ${service.region}`
+                    : service.region
+                    ? `${service.region}`
+                    : ""}
+                </span>
+              )}
+            </div>
           </div>
         )}
       </div>

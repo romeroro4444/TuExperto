@@ -31,8 +31,17 @@ const getUserById = async (req, res) => {
 
 const createUser = async (req, res) => {
   try {
-    const { rut, name, lastname, email, password, telefono, tipo_usuario } =
-      req.body;
+    const {
+      rut,
+      name,
+      lastname,
+      email,
+      password,
+      telefono,
+      tipo_usuario,
+      region,
+      comuna,
+    } = req.body;
 
     const user = await pool.query(
       "SELECT * FROM users WHERE email = $1 OR rut = $2",
@@ -51,8 +60,17 @@ const createUser = async (req, res) => {
     const bcryptPasword = await bcrypt.hash(password, salt);
 
     const text =
-      "INSERT INTO users(rut, name, lastname, email, password, telefono) VALUES ($1,$2,$3,$4,$5,$6) RETURNING user_id";
-    const values = [rut, name, lastname, email, bcryptPasword, telefono];
+      "INSERT INTO users(rut, name, lastname, email, password, telefono, region, comuna) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING user_id";
+    const values = [
+      rut,
+      name,
+      lastname,
+      email,
+      bcryptPasword,
+      telefono,
+      region || null,
+      comuna || null,
+    ];
     const response = await pool.query(text, values);
     const user_id = response.rows[0].user_id;
 

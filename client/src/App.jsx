@@ -10,6 +10,7 @@ import Login from "./components/auth/Login";
 import Register from "./components/auth/Register";
 import Profile from "./components/profile/Profile";
 import EditProfile from "./components/profile/EditProfile";
+import PublicProfile from "./components/profile/PublicProfile";
 import EditService from "./components/services/EditService";
 import MyRequests from "./components/requests/MyRequests";
 import EditRequest from "./components/requests/EditRequest";
@@ -159,6 +160,10 @@ const App = () => {
                 <Profile setAuth={setAuth} tipo_usuario={tipoUsuario} />
               )
             }
+          />
+          <Route
+            path="/professional/:professional_id"
+            element={<PublicProfile />}
           />
           <Route
             path="/edit-profile"

@@ -8,10 +8,9 @@ const HowWork = () => {
           ¿Cómo funciona?
         </h1>
         <p className="text-gray-600 max-w-full text-center mb-8">
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Similique,
-          molestiae delectus placeat earum perspiciatis harum? Accusamus eos nam
-          non, distinctio nemo dolore cumque qui, est laboriosam, minus cum
-          corrupti perferendis.
+          Publicar una solicitud, encontrar profesionales y concretar el trabajo
+          nunca fue tan fácil. Regístrate, publica lo que necesitas y deja que
+          los expertos te propongan presupuestos rápidos y claros.
         </p>
         <div className="flex flex-col md:flex-row items-start justify-center gap-10 w-full">
           <div className="flex flex-col items-center">
@@ -22,7 +21,8 @@ const HowWork = () => {
               Crea tu Perfil
             </h4>
             <p className="text-gray-600">
-              Lorem ipsum dolor sit, amet consectetur adipisicing elit.
+              Crea tu perfil con tus datos, muestra tu experiencia y recibe
+              solicitudes de clientes.
             </p>
           </div>
           <div className="flex flex-col items-center">
@@ -33,7 +33,8 @@ const HowWork = () => {
               Busca un Servicio
             </h4>
             <p className="text-gray-600">
-              Lorem ipsum dolor sit, amet consectetur adipisicing elit.
+              Busca por servicio, filtra por precio y ubicación, y compara
+              reseñas para elegir al profesional adecuado.
             </p>
           </div>
           <div className="flex flex-col items-center">
@@ -44,7 +45,8 @@ const HowWork = () => {
               Agenda, Paga y Listo
             </h4>
             <p className="text-gray-600">
-              Lorem ipsum dolor sit, amet consectetur adipisicing elit.
+              Agenda la fecha, realiza el pago seguro y califica el servicio una
+              vez finalizado. De este modo ayudamos a mantener la calidad.
             </p>
           </div>
         </div>
